@@ -1,12 +1,18 @@
+// server.js
+
 const express = require("express");
 const app = express();
+const PORT = 3000;
 
-app.use(express.json()); // VERY IMPORTANT
+// Middleware (to handle JSON)
+app.use(express.json());
 
+// Test route
 app.get("/", (req, res) => {
-  res.send("Backend is running correctly!");
+  res.send("Backend is running!");
 });
 
-app.listen(5000, () => {
-  console.log("Server started on port 5000");
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server started on http://localhost:${PORT}`);
 });

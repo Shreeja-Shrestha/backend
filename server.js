@@ -1,18 +1,41 @@
-// server.js
+const express = require('express');
+const mysql = require('mysql2');
 
-const express = require("express");
 const app = express();
-const PORT = 3000;
+const port = 3000;
 
-// Middleware (to handle JSON)
-app.use(express.json());
-
-// Test route
-app.get("/", (req, res) => {
-  res.send("Backend is running!");
+// MySQL connection setup
+const connection = mysql.createConnection({
+  host: 'localhost',
+  user: 'root',
+  password: '', // your MySQL password if any
+  database: 'your_database_name'
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server started on http://localhost:${PORT}`);
+connection.connect(error => {
+  if (error) {
+    console.error('MySQL connection error:', error);
+  } else {
+    console.log('Connected to MySQL database');
+  }
+});
+
+// Simple route
+app.get('/', (req, res) => {
+  res.send('Hello from backend!');
+});
+
+// Example route to fetch data from MySQL
+app.get('/users', (req, res) => {
+  connection.query('SELECT * FROM users', (error, results) => {
+    if (error) {
+      res.status(500).send(error);
+    } else {
+      res.json(results);
+    }
+  });
+});
+
+app.listen(port, () => {
+  console.log(`Backend running at http://localhost:${port}`);
 });

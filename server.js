@@ -7,17 +7,21 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Auth and package routes
 app.use("/api/auth", require("./routes/authRoutes"));
+app.use("/api/packages", require("./routes/packageRoutes"));
+app.use("/api/bookings", require("./routes/bookingRoutes"));
 
-app.get("/", (req, res) => {
-  res.send("API Running");
-});
+// const packageReviewRoutes = require("./routes/packageReviewRoutes");
+// app.use("/api/packages_review", packageReviewRoutes); // ✅ path matches Flutter
 
-app.listen(3000, () => console.log("Server running on port 3000"));
-app.get("/test", (req, res) => {
-  res.json({ message: "Backend connected successfully" });
-});
+app.get("/", (req, res) => res.send("API Running"));
+app.get("/test", (req, res) => res.json({ message: "Backend connected successfully" }));
+
+// Log all requests (optional)
 app.use((req, res, next) => {
   console.log("REQUEST:", req.method, req.url);
   next();
 });
+
+app.listen(3000, () => console.log("Server running on port 3000"));

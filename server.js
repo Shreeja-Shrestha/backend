@@ -11,6 +11,9 @@ app.use(express.json());
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/packages", require("./routes/packageRoutes"));
 app.use("/api/bookings", require("./routes/bookingRoutes"));
+const userRoutes = require("./routes/user");
+
+app.use("/api/user", userRoutes);
 
 // const packageReviewRoutes = require("./routes/packageReviewRoutes");
 // app.use("/api/packages_review", packageReviewRoutes); // ✅ path matches Flutter

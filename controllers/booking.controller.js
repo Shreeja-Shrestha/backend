@@ -1,34 +1,53 @@
-// backend/controllers/booking.controller.js
+const db = require('../config/db');
 
-exports.createBooking = async (req, res) => {
-  try {
-    console.log("BODY RECEIVED:", req.body);
+exports.createBooking = (req, res) => {
+    const { user_id, package_id, travel_date, persons, transport_type } = req.body;
 
-    const { packageId, travelDate, persons, transportType } = req.body;
+    const sql = `INSERT INTO tour_bookings 
+        (user_id, tour_id, travel_date, number_of_people, transport_mode, booking_status) 
+        VALUES (?, ?, ?, ?, ?, 'pending')`;
 
-    if (!packageId || !travelDate || !persons || !transportType) {
-      return res.status(400).json({
-        success: false,
-        message: "Missing required fields"
-      });
-    }
+    db.query(sql, [user_id, package_id, travel_date, persons, transport_type], (err, result) => {
+        if (err) {
+            console.error("SQL Error:", err.message);
+            return res.status(500).json({ success: false, message: err.message });
+        }
 
-    // TEMP: no DB yet, just test API
-    return res.status(201).json({
-      success: true,
-      message: "Booking created successfully",
-      data: {
-        packageId,
-        travelDate,
-        persons,
-        transportType
-      }
+        res.status(201).json({ 
+            success: true, 
+            message: "Booking confirmed!", 
+            bookingId: result.insertId 
+        });
     });
-  } catch (error) {
-    console.error("Booking error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Server error"
+};
+
+exports.getUserBookings = (req, res) => {
+    const { userId } = req.params;
+    const sql = "SELECT * FROM tour_bookings WHERE user_id = ?";
+
+    db.query(sql, [userId], (err, rows) => {
+        if (err) return res.status(500).json({ success: false, message: err.message });
+        res.status(200).json({ success: true, bookings: rows });
     });
-  }
+};
+
+exports.deleteBooking = (req, res) => {
+    const { id } = req.params;
+    const sql = "DELETE FROM tour_bookings WHERE id = ?";
+
+    db.query(sql, [id], (err, result) => {
+        if (err) {
+            console.error("SQL Error:", err.message);
+            return res.status(500).json({ success: false, message: err.message });
+        }
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: "Booking not found" });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Booking cancelled successfully"
+        });
+    });
 };

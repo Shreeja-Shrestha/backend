@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const db = require("./db");
+const db = require("./config/db");
 
 const app = express();
 
@@ -14,18 +14,12 @@ app.use("/api/packages", require("./routes/packageRoutes"));
 const userRoutes = require("./routes/user");
 
 app.use("/api/user", userRoutes);
+// FIX: Using bookingRoutes.js as the filename
+app.use("/api/bookings", require("./routes/bookingRoutes"));
 
-// const bookingRoutes = require('./routes/bookingRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
+app.use('/api/reviews', reviewRoutes);
 
-// app.use('/api/bookings', bookingRoutes);
-
-
-// app.use("/api/reviews", require("./routes/packageRoutes"));
-// const tourRoutes = require("./routes/tourRoutes");
-// app.use("/api/tours", tourRoutes);
-
-// const packageReviewRoutes = require("./routes/packageReviewRoutes");
-// app.use("/api/packages_review", packageReviewRoutes); // ✅ path matches Flutter
 
 app.get("/", (req, res) => res.send("API Running"));
 app.get("/test", (req, res) => res.json({ message: "Backend connected successfully" }));

@@ -35,4 +35,32 @@ app.use((req, res, next) => {
   next();
 });
 
+app.get("/nepal-holidays", async (req, res) => {
+  try {
+    const response = await axios.get(
+      "https://www.googleapis.com/calendar/v3/calendars/en.np#holiday@group.v.calendar.google.com/events",
+      {
+        params: {
+          key: process.env.GOOGLE_API_KEY,
+          singleEvents: true,
+          orderBy: "startTime",
+          maxResults: 50,
+        },
+      }
+    );
+
+    const events = response.data.items.map((event) => ({
+      title: event.summary,
+      date: event.start?.date,
+    }));
+
+    res.json(events);
+
+  } catch (error) {
+    console.error(error.response?.data || error.message);
+    res.status(500).json({ error: "Failed to fetch holidays" });
+  }
+});
+
+
 app.listen(3000, () => console.log("Server running on port 3000"));

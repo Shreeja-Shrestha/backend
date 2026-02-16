@@ -12,6 +12,12 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.use((req, res, next) => {
+  console.log("REQUEST:", req.method, req.url);
+  next();
+});
+
+
 // Auth and package routes
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/packages", require("./routes/packageRoutes"));
@@ -25,39 +31,38 @@ app.use("/api/bookings", require("./routes/bookingRoutes"));
 const reviewRoutes = require('./routes/reviewRoutes');
 app.use('/api/reviews', reviewRoutes);
 
+const eventRoutes = require("./routes/eventRoutes");
+
+app.use("/", eventRoutes);
+
 
 app.get("/", (req, res) => res.send("API Running"));
 app.get("/test", (req, res) => res.json({ message: "Backend connected successfully" }));
 
 // Log all requests (optional)
-app.use((req, res, next) => {
-  console.log("REQUEST:", req.method, req.url);
-  next();
-});
-
 app.get("/nepal-holidays", async (req, res) => {
   try {
     const response = await axios.get(
-      "https://www.googleapis.com/calendar/v3/calendars/en.np#holiday@group.v.calendar.google.com/events",
+      "https://www.googleapis.com/calendar/v3/calendars/en.np%23holiday%40group.v.calendar.google.com/events",
       {
         params: {
           key: process.env.GOOGLE_API_KEY,
+          timeMin: new Date().toISOString(), // only upcoming
           singleEvents: true,
-          orderBy: "startTime",
-          maxResults: 50,
-        },
+          orderBy: "startTime"
+        }
       }
     );
 
-    const events = response.data.items.map((event) => ({
+    const holidays = response.data.items.map(event => ({
       title: event.summary,
-      date: event.start?.date,
+      date: event.start.date
     }));
 
-    res.json(events);
+    res.json(holidays);
 
   } catch (error) {
-    console.error(error.response?.data || error.message);
+    console.log("ERROR:", error.response?.data || error.message);
     res.status(500).json({ error: "Failed to fetch holidays" });
   }
 });

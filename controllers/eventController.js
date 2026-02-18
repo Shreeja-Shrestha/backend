@@ -1,18 +1,16 @@
-const eventModel = require("../models/eventModel");
+const eventModel = require('../models/eventModel');
 
-const getTourEvents = async (req, res) => {
-  try {
-    const { tourId } = req.params;
+const getEvents = (req, res) => {
+  const tourId = req.params.id;
 
-    const events = await eventModel.getEventsByTourId(tourId);
+  eventModel.getEventsByTourId(tourId, (err, events) => {
+    if (err) {
+      console.error("Controller Error:", err);
+      return res.status(500).json({ message: "Server error" });
+    }
 
     res.json(events);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
-  }
+  });
 };
 
-module.exports = {
-  getTourEvents,
-};
+module.exports = { getEvents };

@@ -34,6 +34,9 @@ app.use('/api/reviews', reviewRoutes);
 const eventRoutes = require('./routes/eventRoutes');
 app.use('/', eventRoutes);
 
+const hotelRoutes = require("./routes/hotelRoutes");
+
+app.use("/api", hotelRoutes);
 
 app.get("/", (req, res) => res.send("API Running"));
 app.get("/test", (req, res) => res.json({ message: "Backend connected successfully" }));

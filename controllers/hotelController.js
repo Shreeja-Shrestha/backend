@@ -1,7 +1,7 @@
 const axios = require("axios");
 const db = require("../config/db");
 
-// Distance calculator
+// Distance formula
 function calculateDistance(lat1, lon1, lat2, lon2) {
     const R = 6371;
     const toRad = val => val * Math.PI / 180;
@@ -23,11 +23,13 @@ exports.getNearestHotel = async (req, res) => {
     const { lat, lng } = req.query;
 
     if (!lat || !lng) {
-        return res.status(400).json({ message: "Latitude & Longitude required" });
+        return res.status(400).json({ message: "Latitude and Longitude required" });
     }
 
     try {
-        const query = `
+
+        // 🔥 THIS IS THE HOTEL API CALL
+        const overpassQuery = `
             [out:json];
             node["tourism"="hotel"](around:5000,${lat},${lng});
             out;
@@ -35,13 +37,13 @@ exports.getNearestHotel = async (req, res) => {
 
         const response = await axios.post(
             "https://overpass-api.de/api/interpreter",
-            query,
+            overpassQuery,
             { headers: { "Content-Type": "text/plain" } }
         );
 
         const hotels = response.data.elements;
 
-        if (!hotels.length) {
+        if (!hotels || hotels.length === 0) {
             return res.json({ message: "No hotels found nearby" });
         }
 
@@ -64,15 +66,15 @@ exports.getNearestHotel = async (req, res) => {
 
         const hotelName = nearest.tags?.name || "Unnamed Hotel";
 
-        // Save to database
+        // Optional: Save in database
         db.query(
             `INSERT INTO nearest_hotels 
             (search_lat, search_lng, hotel_name, hotel_lat, hotel_lng, distance_km)
             VALUES (?, ?, ?, ?, ?, ?)`,
-            [lat, lng, hotelName, nearest.lat, nearest.lon, minDistance],
+            [lat, lng, hotelName, nearest.lat, nearest.lon, minDistance]
         );
 
-        res.json({
+        return res.json({
             name: hotelName,
             latitude: nearest.lat,
             longitude: nearest.lon,
@@ -81,6 +83,6 @@ exports.getNearestHotel = async (req, res) => {
 
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: "Server error" });
+        return res.status(500).json({ message: "Error fetching hotels" });
     }
 };

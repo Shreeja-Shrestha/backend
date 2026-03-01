@@ -27,8 +27,6 @@ exports.getNearestHotel = async (req, res) => {
     }
 
     try {
-
-        // 🔥 THIS IS THE HOTEL API CALL
         const overpassQuery = `
             [out:json];
             node["tourism"="hotel"](around:5000,${lat},${lng});
@@ -43,8 +41,9 @@ exports.getNearestHotel = async (req, res) => {
 
         const hotels = response.data.elements;
 
+        // ✅ FIX 1: If no hotels, return an EMPTY LIST [], not a message string
         if (!hotels || hotels.length === 0) {
-            return res.json({ message: "No hotels found nearby" });
+            return res.json([]); 
         }
 
         let nearest = null;
@@ -74,15 +73,17 @@ exports.getNearestHotel = async (req, res) => {
             [lat, lng, hotelName, nearest.lat, nearest.lon, minDistance]
         );
 
-        return res.json({
+        // ✅ FIX 2: WRAP THE OBJECT IN [ ] so Flutter receives a List<dynamic>
+        return res.json([{
             name: hotelName,
             latitude: nearest.lat,
             longitude: nearest.lon,
             distance_km: minDistance.toFixed(2)
-        });
+        }]);
 
     } catch (error) {
         console.error(error);
-        return res.status(500).json({ message: "Error fetching hotels" });
+        // ✅ FIX 3: Return an empty list on error so the UI doesn't crash
+        return res.status(500).json([]); 
     }
 };

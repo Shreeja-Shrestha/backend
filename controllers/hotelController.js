@@ -1,9 +1,9 @@
 const axios = require("axios");
 const db = require("../config/db");
 
-// Distance formula
+// Distance formula (Haversine)
 function calculateDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371;
+    const R = 6371; // km
     const toRad = val => val * Math.PI / 180;
 
     const dLat = toRad(lat2 - lat1);
@@ -27,29 +27,36 @@ exports.getNearestHotel = async (req, res) => {
     }
 
     try {
+
+        console.log("Searching hotels near:", lat, lng);
+
+        // 🔥 Improved Overpass Query
         const overpassQuery = `
-            [out:json];
-            node["tourism"="hotel"](around:5000,${lat},${lng});
-            out;
+            [out:json][timeout:25];
+            (
+              node["tourism"~"hotel|guest_house|motel|hostel"](around:5000,${lat},${lng});
+            );
+            out body;
         `;
 
         const response = await axios.post(
             "https://overpass-api.de/api/interpreter",
             overpassQuery,
-            { headers: { "Content-Type": "text/plain" } }
+            {
+                headers: { "Content-Type": "text/plain" },
+                timeout: 15000
+            }
         );
 
         const hotels = response.data.elements;
 
-        // ✅ FIX 1: If no hotels, return an EMPTY LIST [], not a message string
+        console.log("Hotels found:", hotels.length);
+
         if (!hotels || hotels.length === 0) {
-            return res.json([]); 
+            return res.json([]);
         }
 
-        let nearest = null;
-        let minDistance = Infinity;
-
-        hotels.forEach(hotel => {
+        const results = hotels.map(hotel => {
             const distance = calculateDistance(
                 parseFloat(lat),
                 parseFloat(lng),
@@ -57,33 +64,38 @@ exports.getNearestHotel = async (req, res) => {
                 hotel.lon
             );
 
-            if (distance < minDistance) {
-                minDistance = distance;
-                nearest = hotel;
-            }
+            return {
+                name: hotel.tags?.name || "Unnamed Hotel",
+                latitude: hotel.lat,
+                longitude: hotel.lon,
+                distance_km: parseFloat(distance.toFixed(2))
+            };
         });
 
-        const hotelName = nearest.tags?.name || "Unnamed Hotel";
+        // ✅ Sort by nearest
+        results.sort((a, b) => a.distance_km - b.distance_km);
 
-        // Optional: Save in database
+        // ✅ Save nearest hotel in DB
+        const nearest = results[0];
+
         db.query(
             `INSERT INTO nearest_hotels 
             (search_lat, search_lng, hotel_name, hotel_lat, hotel_lng, distance_km)
             VALUES (?, ?, ?, ?, ?, ?)`,
-            [lat, lng, hotelName, nearest.lat, nearest.lon, minDistance]
+            [lat, lng, nearest.name, nearest.latitude, nearest.longitude, nearest.distance_km],
+            (err) => {
+                if (err) {
+                    console.error("Database Insert Error:", err);
+                } else {
+                    console.log("Nearest hotel saved successfully");
+                }
+            }
         );
 
-        // ✅ FIX 2: WRAP THE OBJECT IN [ ] so Flutter receives a List<dynamic>
-        return res.json([{
-            name: hotelName,
-            latitude: nearest.lat,
-            longitude: nearest.lon,
-            distance_km: minDistance.toFixed(2)
-        }]);
+        return res.json(results);
 
     } catch (error) {
-        console.error(error);
-        // ✅ FIX 3: Return an empty list on error so the UI doesn't crash
-        return res.status(500).json([]); 
+        console.error("Overpass Error:", error.message);
+        return res.status(500).json({ message: "Error fetching hotels" });
     }
 };

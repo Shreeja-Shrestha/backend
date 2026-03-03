@@ -78,57 +78,19 @@ exports.getNearestHotel = async (req, res) => {
         // ✅ Save nearest hotel in DB
         const nearest = results[0];
 
-// 🔥 STEP 1: Check if hotel already exists
-const checkSql = `
-  SELECT id FROM hotels
-  WHERE name = ? AND latitude = ? AND longitude = ?
-`;
-
-db.query(
-  checkSql,
-  [nearest.name, nearest.latitude, nearest.longitude],
-  (err, existing) => {
-    if (err) {
-      console.error("Select Error:", err);
-      return res.status(500).json({ message: "Database error" });
-    }
-
-    if (existing.length === 0) {
-      // 🔥 STEP 2: Insert if not exists
-      const insertSql = `
-        INSERT INTO hotels (name, latitude, longitude, source)
-        VALUES (?, ?, ?, 'OpenStreetMap')
-      `;
-
-      db.query(
-        insertSql,
-        [nearest.name, nearest.latitude, nearest.longitude],
-        (err, result) => {
-          if (err) {
-            console.error("Insert Error:", err);
-            return res.status(500).json({ message: "Insert failed" });
-          }
-
-          const hotelId = result.insertId;
-
-          return res.json({
-            hotels: results,
-            nearest_hotel_id: hotelId
-          });
-        }
-      );
-
-    } else {
-      const hotelId = existing[0].id;
-
-      return res.json({
-        hotels: results,
-        nearest_hotel_id: hotelId
-      });
-    }
-  }
-);
-
+        db.query(
+            `INSERT INTO nearest_hotels 
+            (search_lat, search_lng, hotel_name, hotel_lat, hotel_lng, distance_km)
+            VALUES (?, ?, ?, ?, ?, ?)`,
+            [lat, lng, nearest.name, nearest.latitude, nearest.longitude, nearest.distance_km],
+            (err) => {
+                if (err) {
+                    console.error("Database Insert Error:", err);
+                } else {
+                    console.log("Nearest hotel saved successfully");
+                }
+            }
+        );
 
         return res.json(results);
 

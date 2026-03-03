@@ -35,7 +35,6 @@ const eventRoutes = require('./routes/eventRoutes');
 app.use('/', eventRoutes);
 
 const hotelRoutes = require("./routes/hotelRoutes");
-
 app.use("/api", hotelRoutes);
 
 app.get("/", (req, res) => res.send("API Running"));

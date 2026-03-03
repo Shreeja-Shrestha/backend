@@ -28,7 +28,7 @@ exports.createBooking = (req, res) => {
 
     // Updated SQL to include pidx and amount_paid (Make sure you ran the ALTER TABLE command)
     const sql = `INSERT INTO tour_bookings 
-        (user_id, tour_id, travel_date, number_of_people, transport_mode, booking_status, pidx, amount_paid) 
+       const { user_id, hotel_id, travel_date, persons, transport_type, pidx, amount } = req.body; 
         VALUES (?, ?, ?, ?, ?, 'completed', ?, ?)`;
 
     db.query(sql, [user_id, package_id, travel_date, persons, transport_type, pidx, amount], (err, result) => {

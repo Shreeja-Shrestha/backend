@@ -37,6 +37,9 @@ app.use('/', eventRoutes);
 const hotelRoutes = require("./routes/hotelRoutes");
 app.use("/api", hotelRoutes);
 
+const paymentRoutes = require("./routes/paymentRoutes");
+app.use("/api/payment", paymentRoutes);
+
 app.get("/", (req, res) => res.send("API Running"));
 app.get("/test", (req, res) => res.json({ message: "Backend connected successfully" }));
 

@@ -19,32 +19,49 @@ exports.initiatePayment = (req, res) => {
         console.error("Khalti Error:", err.response?.data || err.message);
         res.status(500).json({ error: "Failed to initiate payment" });
     });
-};
+};exports.createBooking = (req, res) => {
+  console.log("Incoming Booking Data:", req.body);
 
-// 2. Create Booking (Called after Khalti success)
-exports.createBooking = (req, res) => {
-    // We added pidx and amount to the destructuring to match Flutter's request
-    const { user_id, package_id, travel_date, persons, transport_type, pidx, amount } = req.body;
+  const {
+    user_id,
+    tour_id,
+    travel_date,
+    number_of_people,
+    transport_mode
+  } = req.body;
 
-    // Updated SQL to include pidx and amount_paid (Make sure you ran the ALTER TABLE command)
-    const sql = `INSERT INTO tour_bookings 
-        (user_id, tour_id, travel_date, number_of_people, transport_mode, booking_status, pidx, amount_paid) 
-        VALUES (?, ?, ?, ?, ?, 'completed', ?, ?)`;
-
-    db.query(sql, [user_id, package_id, travel_date, persons, transport_type, pidx, amount], (err, result) => {
-        if (err) {
-            console.error("SQL Error:", err.message);
-            return res.status(500).json({ success: false, message: err.message });
-        }
-
-        res.status(201).json({ 
-            success: true, 
-            message: "Booking and Payment confirmed!", 
-            bookingId: result.insertId 
-        });
+  if (!user_id || !tour_id || !travel_date || !number_of_people || !transport_mode) {
+    console.log("Missing fields!");
+    return res.status(400).json({
+      error: "All required fields must be provided"
     });
-};
+  }
 
+  const sql = `
+    INSERT INTO tour_bookings
+    (user_id, tour_id, travel_date, number_of_people, transport_mode, booking_status, payment_status)
+    VALUES (?, ?, ?, ?, ?, 'Pending', 'Unpaid')
+  `;
+
+  db.query(
+    sql,
+    [user_id, tour_id, travel_date, number_of_people, transport_mode],
+    (err, result) => {
+      if (err) {
+        console.log("DB ERROR:", err);   // 🔥 THIS IS IMPORTANT
+        return res.status(500).json({
+          error: "Booking creation failed",
+          details: err.message
+        });
+      }
+
+      res.json({
+        message: "Booking created successfully",
+        booking_id: result.insertId
+      });
+    }
+  );
+};
 // 3. Get Bookings for a specific user
 exports.getUserBookings = (req, res) => {
     const { userId } = req.params;

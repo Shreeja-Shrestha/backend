@@ -71,28 +71,6 @@ app.get("/nepal-holidays", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch holidays" });
   }
 });
-app.get("/payment-success", (req, res) => {
-  const { status, pidx, transaction_id, amount } = req.query;
 
-  if (status === "Completed") {
-    db.query(
-      `UPDATE tour_bookings SET 
-        payment_status = 'Paid',
-        booking_status = 'Confirmed',
-        pidx = ?,
-        transaction_id = ?,
-        amount_paid = ?
-       WHERE tour_id = ?`,
-      [pidx, transaction_id, amount, 1], // change 1 to actual booking id
-      (err) => {
-        if (err) return res.send("Database error");
-      }
-    );
-
-    return res.send("Payment Successful & Booking Confirmed ✅");
-  }
-
-  res.send("Payment Failed ❌");
-});
 
 app.listen(3000, () => console.log("Server running on port 3000"));

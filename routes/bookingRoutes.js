@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const bookingController = require('../controllers/booking.controller');
+router.post('/initiate-payment', bookingController.initiatePayment);
 
 router.post('/create', bookingController.createBooking);
 router.get('/user/:userId', bookingController.getUserBookings);

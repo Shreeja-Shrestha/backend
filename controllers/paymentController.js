@@ -1,13 +1,13 @@
 const axios = require("axios");
 const db = require("../config/db");
 
-
-// 1️⃣ INITIATE PAYMENT
 exports.initiatePayment = async (req, res) => {
   const { amount, booking_id } = req.body;
 
   if (!amount || !booking_id) {
-    return res.status(400).json({ error: "Amount and booking_id are required" });
+    return res.status(400).json({
+      error: "Amount and booking_id are required"
+    });
   }
 
   try {
@@ -16,9 +16,9 @@ exports.initiatePayment = async (req, res) => {
       {
         return_url: "http://localhost:3000/api/payment/payment-success",
         website_url: "http://localhost:3000",
-        amount: amount,
-        purchase_order_id: `booking_${booking_id}`,
-        purchase_order_name: "Tour Booking Payment"
+        amount: amount * 100, // Khalti requires paisa
+        purchase_order_id: booking_id.toString(),
+        purchase_order_name: "Booking Payment"
       },
       {
         headers: {
@@ -28,10 +28,12 @@ exports.initiatePayment = async (req, res) => {
       }
     );
 
-    res.json(response.data);
+    res.json({
+      payment_url: response.data.payment_url
+    });
 
   } catch (error) {
-    console.error("Khalti Initiate Error:", error.response?.data || error.message);
+    console.log(error.response?.data || error.message);
     res.status(500).json({
       error: error.response?.data || error.message
     });
@@ -43,29 +45,37 @@ exports.initiatePayment = async (req, res) => {
 // 2️⃣ PAYMENT SUCCESS (Khalti Redirect Here)
 exports.paymentSuccess = async (req, res) => {
   try {
-    const { purchase_order_id } = req.query;
+    const { pidx, transaction_id } = req.query;
 
-    if (!purchase_order_id) {
-      return res.status(400).send("Invalid payment response");
+    console.log("Payment Success Params:", req.query);
+
+    if (!pidx) {
+      return res.status(400).send("No pidx received");
     }
 
-    // Extract booking id from "booking_5"
-    const bookingId = purchase_order_id.replace("booking_", "");
+    // Update booking using pidx
+    const sql = `
+      UPDATE tour_bookings 
+      SET payment_status = 'Paid',
+          booking_status = 'Pending',
+          transaction_id = ?
+      WHERE pidx = ?
+    `;
 
-    await db.query(
-      "UPDATE bookings SET payment_status = 'Paid' WHERE id = ?",
-      [bookingId]
-    );
+    db.query(sql, [transaction_id || null, pidx], (err, result) => {
+      if (err) {
+        console.log("DB Error:", err);
+        return res.status(500).send("Database update failed");
+      }
 
-    res.send("Payment Successful. Waiting for Admin Approval.");
+      res.send("Payment Successful. Waiting for Admin Approval.");
+    });
 
   } catch (error) {
-    console.error("Payment Success Error:", error);
+    console.log("ERROR:", error);
     res.status(500).send("Error updating payment.");
   }
 };
-
-
 
 // 3️⃣ VERIFY PAYMENT (Optional but Good Practice)
 exports.verifyPayment = async (req, res) => {
@@ -76,6 +86,7 @@ exports.verifyPayment = async (req, res) => {
   }
 
   try {
+    // Call Khalti lookup API
     const response = await axios.post(
       "https://a.khalti.com/api/v2/epayment/lookup/",
       { pidx },
@@ -87,10 +98,50 @@ exports.verifyPayment = async (req, res) => {
       }
     );
 
-    res.json(response.data);
+    const paymentData = response.data;
+
+    console.log("Khalti Verify Response:", paymentData);
+
+    if (paymentData.status === "Completed") {
+
+      // Update booking in DB
+      const sql = `
+        UPDATE tour_bookings
+        SET payment_status = 'Paid',
+            amount_paid = ?,
+            transaction_id = ?
+        WHERE pidx = ?
+      `;
+
+      db.query(
+        sql,
+        [
+          paymentData.total_amount / 100, // convert paisa to rupees
+          paymentData.transaction_id,
+          pidx
+        ],
+        (err) => {
+          if (err) {
+            console.log("DB Error:", err);
+            return res.status(500).json({ error: "Database update failed" });
+          }
+
+          return res.json({
+            success: true,
+            message: "Payment verified and updated"
+          });
+        }
+      );
+
+    } else {
+      return res.status(400).json({
+        error: "Payment not completed",
+        status: paymentData.status
+      });
+    }
 
   } catch (error) {
-    console.error("Verification Error:", error.response?.data || error.message);
+    console.log("Verify Error:", error.response?.data || error.message);
     res.status(500).json({
       error: error.response?.data || error.message
     });

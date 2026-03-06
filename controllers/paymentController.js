@@ -27,22 +27,22 @@ exports.initiatePayment = async (req, res) => {
         }
       }
     );
+
     const pidx = response.data.pidx;
 
-// 🔥 SAVE pidx
+// Save pidx in database
 const sql = "UPDATE tour_bookings SET pidx=? WHERE id=?";
 
 db.query(sql, [pidx, booking_id], (err) => {
-  if (err) console.log("DB Error:", err);
+  if (err) {
+    console.log("DB Error:", err);
+  }
 });
 
+// Send payment URL to Flutter
 res.json({
   payment_url: response.data.payment_url
 });
-
-    res.json({
-      payment_url: response.data.payment_url
-    });
 
   } catch (error) {
     console.log(error.response?.data || error.message);
@@ -69,7 +69,7 @@ exports.paymentSuccess = async (req, res) => {
     const sql = `
       UPDATE tour_bookings 
       SET payment_status = 'Paid',
-          booking_status = 'Pending',
+    booking_status = 'Confirmed',
           transaction_id = ?
       WHERE pidx = ?
     `;

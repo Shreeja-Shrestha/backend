@@ -21,7 +21,7 @@ exports.initiatePayment = (req, res) => {
     });
 };exports.createBooking = (req, res) => {
   console.log("Incoming Booking Data:", req.body);
-
+  console.log("Booking body:", req.body);
   const {
     user_id,
     tour_id,
@@ -37,12 +37,11 @@ exports.initiatePayment = (req, res) => {
     });
   }
 
-  const sql = `
-    INSERT INTO tour_bookings
-    (user_id, tour_id, travel_date, number_of_people, transport_mode, booking_status, payment_status)
-    VALUES (?, ?, ?, ?, ?, 'Pending', 'Unpaid')
-  `;
-
+ const sql = `
+INSERT INTO tour_bookings
+(user_id, tour_id, travel_date, number_of_people, transport_mode, hotel_id, booking_status, payment_status, amount_paid, payment_method)
+VALUES (?, ?, ?, ?, ?, ?, 'Pending', 'Unpaid', 0, 'Khalti')
+`;
   db.query(
     sql,
     [user_id, tour_id, travel_date, number_of_people, transport_mode],

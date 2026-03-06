@@ -27,6 +27,18 @@ exports.initiatePayment = async (req, res) => {
         }
       }
     );
+    const pidx = response.data.pidx;
+
+// 🔥 SAVE pidx
+const sql = "UPDATE tour_bookings SET pidx=? WHERE id=?";
+
+db.query(sql, [pidx, booking_id], (err) => {
+  if (err) console.log("DB Error:", err);
+});
+
+res.json({
+  payment_url: response.data.payment_url
+});
 
     res.json({
       payment_url: response.data.payment_url

@@ -40,7 +40,8 @@ app.use("/api", hotelRoutes);
 
 const paymentRoutes = require("./routes/paymentRoutes");
 app.use("/api/payment", paymentRoutes);
-
+const favoriteRoutes = require("./routes/favoriteRoutes");
+app.use("/api/favorites", favoriteRoutes);
 app.get("/", (req, res) => res.send("API Running"));
 app.get("/test", (req, res) => res.json({ message: "Backend connected successfully" }));
 

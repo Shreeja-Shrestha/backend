@@ -1,22 +1,31 @@
-const db = require("../db");
+const tourModel = require("../models/tourModel");
 
-// GET all tours
-exports.getAllTours = (req, res) => {
-  const sql = "SELECT * FROM tours";
-  db.query(sql, (err, results) => {
-    if (err) return res.status(500).json(err);
-    res.json(results);
+exports.getTours = (req, res) => {
+
+  tourModel.getAllTours((err, result) => {
+
+    if (err) {
+      return res.status(500).json(err);
+    }
+
+    res.json(result);
+
   });
+
 };
 
-// GET single tour
 exports.getTourById = (req, res) => {
-  const sql = "SELECT * FROM tours WHERE id = ?";
-  db.query(sql, [req.params.id], (err, results) => {
-    if (err) return res.status(500).json(err);
-    if (results.length === 0)
-      return res.status(404).json({ message: "Tour not found" });
 
-    res.json(results[0]);
+  const id = req.params.id;
+
+  tourModel.getTourById(id, (err, result) => {
+
+    if (err) {
+      return res.status(500).json(err);
+    }
+
+    res.json(result[0]);
+
   });
+
 };

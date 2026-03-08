@@ -62,7 +62,8 @@ exports.createBooking = (req, res) => {
 
     }
   );
-};exports.getUserBookings = (req, res) => {
+};
+exports.getUserBookings = (req, res) => {
     const { userId } = req.params;
     const sql = "SELECT * FROM tour_bookings WHERE user_id = ? ORDER BY travel_date DESC";
 

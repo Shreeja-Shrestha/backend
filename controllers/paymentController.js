@@ -21,8 +21,8 @@ if (amount < 10 || amount > 1000) {
     const response = await axios.post(
       "https://a.khalti.com/api/v2/epayment/initiate/",
       {
-        return_url: "http://10.0.2.2:3000/api/payment/payment-success",
-        website_url: "http://10.0.2.2:3000",
+        return_url: "http://localhost:3000/api/payment/payment-success",
+website_url: "http://localhost:3000",
         amount: amount * 100,
         purchase_order_id: booking_id.toString(),
         purchase_order_name: "Booking Payment"

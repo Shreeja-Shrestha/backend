@@ -1,10 +1,11 @@
 const mysql = require('mysql2');
 
 const dbConfig = {
-  host: 'localhost',
+  host: '127.0.0.1',
   user: 'root',
-  password: '', 
-  database: 'tourandtravel_db' 
+  password: '',
+  database: 'tourandtravel_db',
+  port: 3306
 };
 
 let connection;
@@ -15,16 +16,16 @@ function handleDisconnect() {
   connection.connect((err) => {
     if (err) {
       console.error('Error connecting to db:', err.message);
-      setTimeout(handleDisconnect, 2000); // Try again in 2 seconds
+      setTimeout(handleDisconnect, 2000);
     } else {
-      console.log('Database connected (Single Connection Mode).');
+      console.log('Database connected.');
     }
   });
 
   connection.on('error', (err) => {
     console.error('Database error:', err);
     if (err.code === 'PROTOCOL_CONNECTION_LOST') {
-      handleDisconnect(); // Re-establish connection
+      handleDisconnect();
     } else {
       throw err;
     }

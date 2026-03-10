@@ -18,14 +18,12 @@ app.use((req, res, next) => {
   next();
 });
 
+const authRoutes = require("./routes/authRoutes");
 
+app.use("/api/auth",authRoutes);
 // Auth and package routes
-app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/packages", require("./routes/packageRoutes"));
 //app.use("/api/bookings", require("./routes/bookingRoutes"));
-const userRoutes = require("./routes/user");
-
-app.use("/api/user", userRoutes);
 // FIX: Using bookingRoutes.js as the filename
 app.use("/api/bookings", require("./routes/bookingRoutes"));
 
@@ -36,7 +34,10 @@ const eventRoutes = require('./routes/eventRoutes');
 app.use('/', eventRoutes);
 
 const hotelRoutes = require("./routes/hotelRoutes");
-app.use("/api", hotelRoutes);
+app.use("/api/hotels", hotelRoutes);
+
+const userRoutes = require("./routes/userRoutes");
+app.use("/api/users", userRoutes);
 
 const paymentRoutes = require("./routes/paymentRoutes");
 app.use("/api/payment", paymentRoutes);

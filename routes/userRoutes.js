@@ -4,26 +4,20 @@ const db = require("../config/db");
 
 // GET USER PROFILE
 router.get("/profile/:id", (req, res) => {
+
   const userId = req.params.id;
 
   const sql = `
-    SELECT 
-      id,
-      name,
-      email,
-      role,
-      tagline,
-      trips,
-      bookings,
-      wishlist
+    SELECT id, name, email, role, tagline, trips, bookings, wishlist
     FROM users
     WHERE id = ?
   `;
 
   db.query(sql, [userId], (err, result) => {
+
     if (err) {
       console.error(err);
-      return res.status(500).json({ error: err });
+      return res.status(500).json({ message: "Database error" });
     }
 
     if (result.length === 0) {
@@ -31,7 +25,9 @@ router.get("/profile/:id", (req, res) => {
     }
 
     res.json(result[0]);
+
   });
+
 });
 
 module.exports = router;

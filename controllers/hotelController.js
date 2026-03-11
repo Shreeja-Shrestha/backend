@@ -46,7 +46,7 @@ exports.getNearestHotel = async (req, res) => {
          WHERE ABS(search_lat - ?) < 0.01
          AND ABS(search_lng - ?) < 0.01
          ORDER BY created_at DESC
-         LIMIT 10`,
+         LIMIT 50`,
         [latNum, lngNum],
         (err, rows) => {
           if (err) {
@@ -111,38 +111,38 @@ exports.getNearestHotel = async (req, res) => {
       };
     });
 
-    // =========================
+
     // SORT BY NEAREST
-    // =========================
+   
     results.sort((a, b) => a.distance_km - b.distance_km);
 
-    const topHotels = results.slice(0, 10);
+    const topHotels = results.slice(0, 50);
 
-    // =========================
-    // SAVE NEAREST HOTEL
-    // =========================
-    const nearest = topHotels[0];
 
-    db.query(
-      `INSERT INTO nearest_hotels
-       (search_lat, search_lng, hotel_name, hotel_lat, hotel_lng, distance_km)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [
-        latNum,
-        lngNum,
-        nearest.name,
-        nearest.latitude,
-        nearest.longitude,
-        nearest.distance_km
-      ],
-      (err) => {
-        if (err) {
-          console.error("Database Insert Error:", err);
-        } else {
-          console.log("Nearest hotel saved successfully");
-        }
+// SAVE TOP 10 HOTELS
+
+topHotels.forEach((hotel) => {
+  db.query(
+    `INSERT INTO nearest_hotels
+     (search_lat, search_lng, hotel_name, hotel_lat, hotel_lng, distance_km)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [
+      latNum,
+      lngNum,
+      hotel.name,
+      hotel.latitude,
+      hotel.longitude,
+      hotel.distance_km
+    ],
+    (err) => {
+      if (err) {
+        console.error("Database Insert Error:", err);
       }
-    );
+    }
+  );
+});
+
+console.log("Top hotels saved to cache");
 
     return res.json(topHotels);
 

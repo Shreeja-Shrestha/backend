@@ -19,21 +19,21 @@ if (amount < 10 || amount > 1000) {
 
   try {
     const response = await axios.post(
-      "https://a.khalti.com/api/v2/epayment/initiate/",
-      {
-        return_url: "http://localhost:3000/api/payment/payment-success",
-website_url: "http://localhost:3000",
-        amount: amount * 100,
-        purchase_order_id: booking_id.toString(),
-        purchase_order_name: "Booking Payment"
-      },
-      {
-        headers: {
-          Authorization: `Key ${process.env.KHALTI_SECRET_KEY}`,
-          "Content-Type": "application/json"
-        }
-      }
-    );
+  "https://a.khalti.com/api/v2/epayment/initiate/",
+  {
+    return_url: "http://192.168.18.11:3000/api/payment/payment-success",
+    website_url: "http://192.168.18.11:3000",
+    amount: amount * 100,
+    purchase_order_id: booking_id.toString(),
+    purchase_order_name: "Booking Payment"
+  },
+  {
+    headers: {
+      Authorization: `Key ${process.env.KHALTI_SECRET_KEY}`,
+      "Content-Type": "application/json"
+    }
+  }
+);
 
     const pidx = response.data.pidx;
 

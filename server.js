@@ -47,6 +47,10 @@ app.use("/api/favorites", favoriteRoutes);
 const tourRoutes = require("./routes/tourRoutes");
 
 app.use("/api/tours", tourRoutes);
+
+const notificationRoutes = require("./routes/notificationRoutes");
+app.use("/api/notifications", notificationRoutes);
+
 app.get("/", (req, res) => res.send("API Running"));
 app.get("/test", (req, res) => res.json({ message: "Backend connected successfully" }));
 

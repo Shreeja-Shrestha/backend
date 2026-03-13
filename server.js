@@ -1,0 +1,88 @@
+require("dotenv").config();
+
+const express = require("express");
+const cors = require("cors");
+const db = require("./config/db");
+
+const axios = require("axios");
+
+
+const app = express();
+
+app.use(cors());
+
+app.use(express.json());
+
+app.use((req, res, next) => {
+  console.log("REQUEST:", req.method, req.url);
+  next();
+});
+
+const authRoutes = require("./routes/authRoutes");
+
+app.use("/api/auth",authRoutes);
+// Auth and package routes
+app.use("/api/packages", require("./routes/packageRoutes"));
+//app.use("/api/bookings", require("./routes/bookingRoutes"));
+// FIX: Using bookingRoutes.js as the filename
+app.use("/api/bookings", require("./routes/bookingRoutes"));
+
+const reviewRoutes = require('./routes/reviewRoutes');
+app.use('/api/reviews', reviewRoutes);
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+const eventRoutes = require('./routes/eventRoutes');
+app.use('/', eventRoutes);
+
+const hotelRoutes = require("./routes/hotelRoutes");
+app.use("/api/hotels", hotelRoutes);
+
+const userRoutes = require("./routes/userRoutes");
+app.use("/api/users", userRoutes);
+
+const paymentRoutes = require("./routes/paymentRoutes");
+app.use("/api/payment", paymentRoutes);
+const favoriteRoutes = require("./routes/favoriteRoutes");
+app.use("/api/favorites", favoriteRoutes);
+
+const tourRoutes = require("./routes/tourRoutes");
+
+app.use("/api/tours", tourRoutes);
+
+const notificationRoutes = require('./routes/notificationRoutes');
+
+app.use('/api/notifications', notificationRoutes);
+
+app.get("/", (req, res) => res.send("API Running"));
+app.get("/test", (req, res) => res.json({ message: "Backend connected successfully" }));
+
+// Log all requests (optional)
+app.get("/nepal-holidays", async (req, res) => {
+  try {
+    const response = await axios.get(
+      "https://www.googleapis.com/calendar/v3/calendars/en.np%23holiday%40group.v.calendar.google.com/events",
+      {
+        params: {
+          key: process.env.GOOGLE_API_KEY,
+          timeMin: new Date().toISOString(), // only upcoming
+          singleEvents: true,
+          orderBy: "startTime"
+        }
+      }
+    );
+
+    const holidays = response.data.items.map(event => ({
+      title: event.summary,
+      date: event.start.date
+    }));
+
+    res.json(holidays);
+
+  } catch (error) {
+    console.log("ERROR:", error.response?.data || error.message);
+    res.status(500).json({ error: "Failed to fetch holidays" });
+  }
+});
+
+
+app.listen(3000, () => console.log("Server running on port 3000"));

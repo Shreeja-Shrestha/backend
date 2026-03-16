@@ -27,8 +27,8 @@ exports.initiatePayment = async (req, res) => {
     const response = await axios.post(
       "https://a.khalti.com/api/v2/epayment/initiate/",
       {
-        return_url: "http://192.168.18.11:3000/api/payment/payment-success",
-        website_url: "http://192.168.18.11:3000",
+        return_url: `http://172.20.10.2:3000/api/payment/payment-success?booking_id=${booking_id}`,
+        website_url: "http://172.20.10.2:3000",
         amount: amount * 100,
         purchase_order_id: booking_id.toString(),
         purchase_order_name: "Tour Booking Payment",
@@ -64,12 +64,12 @@ exports.initiatePayment = async (req, res) => {
   }
 };
 
-/* =========================
-   2) PAYMENT SUCCESS
-========================= */
+
 exports.paymentSuccess = async (req, res) => {
+
   try {
-    const { pidx } = req.query;
+
+    const { pidx, booking_id } = req.query;
 
     if (!pidx) {
       return res.status(400).send("pidx missing");
@@ -91,7 +91,8 @@ exports.paymentSuccess = async (req, res) => {
     console.log("Khalti Lookup:", paymentData);
 
     if (paymentData.status === "Completed") {
-      const sql = `
+
+      const updateSql = `
         UPDATE tour_bookings
         SET payment_status='Paid',
             booking_status='Confirmed',
@@ -101,27 +102,83 @@ exports.paymentSuccess = async (req, res) => {
       `;
 
       db.query(
-        sql,
+        updateSql,
         [
           paymentData.total_amount / 100,
           paymentData.transaction_id,
           pidx,
         ],
-     (err) => {
+        (err) => {
+
+          if (err) {
+            console.log("DB Error:", err);
+            return res.status(500).send("Database error");
+          }
+
+        const bookingQuery = `
+SELECT id, user_id, tour_id, travel_date
+FROM tour_bookings
+WHERE pidx = ?
+LIMIT 1
+`;
+
+db.query(bookingQuery, [pidx], (err, result) => {
+
   if (err) {
-    console.log("DB Error:", err);
-    return res.status(500).send("Database error");
+    console.log("Booking fetch error:", err);
+    return res.redirect("fypapp://booking-success");
   }
 
-  // redirect user after successful payment
-  return res.redirect("http://192.168.18.11:3000/booking-success");
-}
+  if (result.length === 0) {
+    console.log("No booking found for pidx:", pidx);
+    return res.redirect("fypapp://booking-success");
+  }
+
+  const bookingId = result[0].id;
+  const userId = result[0].user_id;
+  const tourId = result[0].tour_id;
+  const travelDate = result[0].travel_date;
+
+  const notificationQuery = `
+  INSERT INTO notifications
+  (user_id, title, message, type, reference_id)
+  VALUES (?, ?, ?, ?, ?)
+  `;
+
+  db.query(
+    notificationQuery,
+    [
+      userId,
+      "Booking Placed",
+      `Your tour booking for ${travelDate} has been placed.`,
+      "booking",
+      bookingId
+    ],
+    (err) => {
+      if (err) {
+        console.log("Notification insert error:", err);
+      } else {
+        console.log("Notification inserted successfully");
+      }
+    }
+  );
+
+  return res.redirect(`fypapp://booking-success?booking_id=${bookingId}`);
+
+});
+
+        }
       );
+
     } else {
       res.send("Payment not completed");
     }
+
   } catch (error) {
-    console.log("Payment verification error:", error.response?.data || error.message);
+    console.log(
+      "Payment verification error:",
+      error.response?.data || error.message
+    );
     res.status(500).send("Verification failed");
   }
 };
@@ -133,8 +190,7 @@ exports.verifyPayment = async (req, res) => {
       return res.status(400).json({ error: "Request body missing" });
     }
 
-    const { pidx } = req.body;
-
+    const { pidx} = req.body;
     if (!pidx) {
       return res.status(400).json({ error: "pidx is required" });
     }

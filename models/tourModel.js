@@ -76,8 +76,25 @@ exports.updateTour = function (id, tour, callback) {
 /* DELETE TOUR */
 exports.deleteTour = function (id, callback) {
 
-  const sql = "DELETE FROM tours WHERE id = ?";
+  const deleteFavorites = "DELETE FROM favorites WHERE tour_id = ?";
+  const deleteRatings = "DELETE FROM ratings WHERE tour_id = ?";
+  const deleteBookings = "DELETE FROM tour_bookings WHERE tour_id = ?";
+  const deleteTour = "DELETE FROM tours WHERE id = ?";
 
-  db.query(sql, [id], callback);
+  db.query(deleteFavorites, [id], function(err) {
+    if (err) return callback(err);
+
+    db.query(deleteRatings, [id], function(err) {
+      if (err) return callback(err);
+
+      db.query(deleteBookings, [id], function(err) {
+        if (err) return callback(err);
+
+        db.query(deleteTour, [id], callback);
+      });
+
+    });
+
+  });
 
 };

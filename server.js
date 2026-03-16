@@ -36,6 +36,11 @@ app.use('/', eventRoutes);
 
 const hotelRoutes = require("./routes/hotelRoutes");
 app.use("/api/hotels", hotelRoutes);
+const otpRoutes = require("./routes/otpRoutes");
+app.use("/api/otp", otpRoutes);
+
+const searchRoutes = require("./routes/searchRoutes");
+app.use("/api/search", searchRoutes);
 
 const userRoutes = require("./routes/userRoutes");
 app.use("/api/users", userRoutes);
@@ -83,6 +88,31 @@ app.get("/nepal-holidays", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch holidays" });
   }
 });
+app.get("/booking-success", (req, res) => {
+  res.send(`
+    <html>
+      <head>
+        <title>Payment Successful</title>
+      </head>
+      <body style="text-align:center;font-family:sans-serif;margin-top:100px">
 
+        <h2>Payment Successful</h2>
+        <p>Your tour booking has been confirmed.</p>
+
+        <button onclick="goHome()" 
+        style="padding:10px 20px;font-size:16px;background:green;color:white;border:none;border-radius:5px;">
+        Return to Home
+        </button>
+
+        <script>
+          function goHome(){
+            window.location.href="http://192.168.18.11:3000";
+          }
+        </script>
+
+      </body>
+    </html>
+  `);
+});
 
 app.listen(3000, () => console.log("Server running on port 3000"));

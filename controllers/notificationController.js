@@ -1,56 +1,82 @@
-const db = require("../config/db");
+const db = require('../config/db');
 
-// create notification
-exports.createNotification = (userId, title, message, type, referenceId = null) => {
-
-    const sql = `
-        INSERT INTO notifications (user_id, title, message, type, reference_id)
-        VALUES (?, ?, ?, ?, ?)
-    `;
-
-    db.query(sql, [userId, title, message, type, referenceId], (err) => {
-        if (err) {
-            console.error("Notification error:", err);
-        }
-    });
-};
-
-// get notifications for a user
-exports.getUserNotifications = (req, res) => {
+// Get notifications for a user
+exports.getNotifications = (req, res) => {
 
     const userId = req.params.userId;
 
-    const sql = `
+    const query = `
         SELECT * FROM notifications
         WHERE user_id = ?
         ORDER BY created_at DESC
     `;
 
-    db.query(sql, [userId], (err, results) => {
+    db.query(query, [userId], (err, results) => {
 
         if (err) {
-            return res.status(500).json(err);
+            return res.status(500).json({ error: err.message });
         }
 
         res.json(results);
     });
 };
 
-// mark notification as read
+
+// Create notification
+// Create notification
+exports.createNotification = (req, res) => {
+
+    if (!req.body) {
+        return res.status(400).json({ error: "Request body missing" });
+    }
+
+    const { user_id, title, message, type, reference_id } = req.body;
+
+    if (!user_id || !title || !message) {
+        return res.status(400).json({
+            error: "user_id, title and message are required"
+        });
+    }
+
+    const query = `
+        INSERT INTO notifications
+        (user_id, title, message, type, reference_id)
+        VALUES (?, ?, ?, ?, ?)
+    `;
+
+    db.query(
+        query,
+        [user_id, title, message, type || null, reference_id || null],
+        (err, result) => {
+
+            if (err) {
+                console.log("Notification insert error:", err);
+                return res.status(500).json({ error: err.message });
+            }
+
+            res.json({
+                success: true,
+                message: "Notification created successfully",
+                notification_id: result.insertId
+            });
+        }
+    );
+};
+// Mark notification as read
 exports.markAsRead = (req, res) => {
 
-    const id = req.params.id;
+    const notificationId = req.params.id;
 
-    const sql = `
+    const query = `
         UPDATE notifications
-        SET is_read = TRUE
+        SET is_read = 1
         WHERE id = ?
     `;
 
-    db.query(sql, [id], (err) => {
+    db.query(query, [notificationId], (err, result) => {
 
         if (err) {
-            return res.status(500).json(err);
+            return res.status(500).json({ error: err.message });
         }
 
         res.json({ message: "Notification marked as read" });

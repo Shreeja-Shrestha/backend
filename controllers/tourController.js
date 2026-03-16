@@ -79,19 +79,23 @@ exports.updateTour = function (req, res) {
 
 /* DELETE TOUR */
 exports.deleteTour = function (req, res) {
-
   const id = req.params.id;
 
   tourModel.deleteTour(id, function (err, result) {
 
     if (err) {
-      return res.status(500).json(err);
+      console.error(err);
+      return res.status(500).json({ message: "Database error" });
     }
 
-    res.json({
+    // This checks if a row was actually deleted
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Tour not found" });
+    }
+
+    res.status(200).json({
       message: "Tour deleted successfully"
     });
 
   });
-
 };

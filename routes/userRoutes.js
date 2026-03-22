@@ -32,23 +32,22 @@ router.put("/update", (req, res) => {
   console.log("HEADERS:", req.headers);
   console.log("BODY:", req.body);
 
-const { id, name, email } = req.body || {};
-  if (!id) {
+const { id, name, email, tagline } = req.body || {};  if (!id) {
     return res.status(400).json({ error: "User ID required" });
   }
 
   const sql = `
     UPDATE users 
-    SET name = ?, email = ?
+    SET name = ?, email = ?,tagline=?
     WHERE id = ?
   `;
 
-  db.query(sql, [name, email, id], (err, result) => {
+  db.query(sql, [name, email,tagline, id], (err, result) => {
    if (err) {
   console.error("DB ERROR:", err);
   return res.status(500).json({ 
     error: "Database error",
-    details: err.message   // 👈 ADD THIS LINE
+    details: err.message   //  ADD THIS LINE
   });
 }
 

@@ -27,8 +27,8 @@ exports.initiatePayment = async (req, res) => {
     const response = await axios.post(
       "https://a.khalti.com/api/v2/epayment/initiate/",
       {
-        return_url: `http://172.20.10.2:3000/api/payment/payment-success?booking_id=${booking_id}`,
-        website_url: "http://172.20.10.2:3000",
+        return_url: `http://192.168.18.11:3000/api/payment/payment-success?booking_id=${booking_id}`,
+        website_url: "http://192.168.18.11:3000",
         amount: amount * 100,
         purchase_order_id: booking_id.toString(),
         purchase_order_name: "Tour Booking Payment",
@@ -163,7 +163,9 @@ db.query(bookingQuery, [pidx], (err, result) => {
     }
   );
 
-  return res.redirect(`fypapp://booking-success?booking_id=${bookingId}`);
+  return res.redirect(
+  `fypapp://booking-success?booking_id=${bookingId}&pidx=${pidx}`
+);
 
 });
 
@@ -250,4 +252,33 @@ exports.verifyPayment = async (req, res) => {
       error: error.response?.data || error.message,
     });
   }
+};
+exports.getReceipt = (req, res) => {
+  const { booking_id } = req.params;
+
+  const sql = `
+    SELECT 
+      tb.id,
+      tb.travel_date,
+      tb.amount_paid,
+      tb.transaction_id,
+      t.title AS tour_name
+    FROM tour_bookings tb
+    JOIN tours t ON tb.tour_id = t.id
+    WHERE tb.id = ?
+    LIMIT 1
+  `;
+
+  db.query(sql, [booking_id], (err, result) => {
+    if (err) {
+      console.log("Receipt fetch error:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+
+    if (result.length === 0) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
+
+    res.json(result[0]);
+  });
 };

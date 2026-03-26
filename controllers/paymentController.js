@@ -163,9 +163,7 @@ db.query(bookingQuery, [pidx], (err, result) => {
     }
   );
 
-  return res.redirect(
-  `fypapp://booking-success?booking_id=${bookingId}&pidx=${pidx}`
-);
+  return res.redirect(`fypapp://booking-success?booking_id=${bookingId}`);
 
 });
 
@@ -253,32 +251,25 @@ exports.verifyPayment = async (req, res) => {
     });
   }
 };
-exports.getReceipt = (req, res) => {
-  const { booking_id } = req.params;
+// After payment verified
 
-  const sql = `
-    SELECT 
-      tb.id,
-      tb.travel_date,
-      tb.amount_paid,
-      tb.transaction_id,
-      t.title AS tour_name
-    FROM tour_bookings tb
-    JOIN tours t ON tb.tour_id = t.id
-    WHERE tb.id = ?
-    LIMIT 1
-  `;
+// 1. Update booking status
+await db.query(
+  "UPDATE tour_booking SET payment_status='paid' WHERE id=?",
+  [booking_id]
+);
 
-  db.query(sql, [booking_id], (err, result) => {
-    if (err) {
-      console.log("Receipt fetch error:", err);
-      return res.status(500).json({ error: "Database error" });
-    }
-
-    if (result.length === 0) {
-      return res.status(404).json({ error: "Booking not found" });
-    }
-
-    res.json(result[0]);
-  });
-};
+// 2. Create receipt
+await db.query(
+  `INSERT INTO receipts 
+   (booking_id, user_id, amount, payment_method, transaction_id, status)
+   VALUES (?, ?, ?, ?, ?, ?)`,
+  [
+    booking_id,
+    user_id,
+    amount,
+    "Khalti",
+    transaction_id,
+    "completed"
+  ]
+);

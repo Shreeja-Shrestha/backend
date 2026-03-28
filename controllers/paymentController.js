@@ -138,6 +138,31 @@ db.query(bookingQuery, [pidx], (err, result) => {
   const userId = result[0].user_id;
   const tourId = result[0].tour_id;
   const travelDate = result[0].travel_date;
+  // 🔥 INSERT RECEIPT
+const receiptQuery = `
+INSERT INTO receipts
+(booking_id, user_id, tour_id, amount, transaction_id, payment_status)
+VALUES (?, ?, ?, ?, ?, ?)
+`;
+
+db.query(
+  receiptQuery,
+  [
+    bookingId,
+    userId,
+    tourId,
+    paymentData.total_amount / 100,
+    paymentData.transaction_id,
+    "Paid"
+  ],
+  (err) => {
+    if (err) {
+      console.log("Receipt insert error:", err);
+    } else {
+      console.log("Receipt created successfully");
+    }
+  }
+);
 
   const notificationQuery = `
   INSERT INTO notifications
@@ -251,25 +276,3 @@ exports.verifyPayment = async (req, res) => {
     });
   }
 };
-// After payment verified
-
-// 1. Update booking status
-await db.query(
-  "UPDATE tour_booking SET payment_status='paid' WHERE id=?",
-  [booking_id]
-);
-
-// 2. Create receipt
-await db.query(
-  `INSERT INTO receipts 
-   (booking_id, user_id, amount, payment_method, transaction_id, status)
-   VALUES (?, ?, ?, ?, ?, ?)`,
-  [
-    booking_id,
-    user_id,
-    amount,
-    "Khalti",
-    transaction_id,
-    "completed"
-  ]
-);

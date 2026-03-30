@@ -20,3 +20,23 @@ exports.getReceipt = (req, res) => {
     res.json(result[0]);
   });
 };
+exports.getReceiptsByUser = (req, res) => {
+  const userId = req.params.user_id;
+
+  const sql = `
+    SELECT r.*, t.title
+    FROM receipts r
+    JOIN tours t ON r.tour_id = t.id
+    WHERE r.user_id = ?
+    ORDER BY r.created_at DESC
+  `;
+
+  db.query(sql, [userId], (err, result) => {
+    if (err) {
+      console.log(err);
+      return res.status(500).json(err);
+    }
+
+    res.json(result);
+  });
+};

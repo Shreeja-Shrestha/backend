@@ -4,4 +4,6 @@ const receiptController = require("../controllers/receiptController");
 
 router.get("/receipt/:booking_id", receiptController.getReceipt);
 
+router.get("/receipts/user/:user_id", receiptController.getReceiptsByUser);
+
 module.exports = router;

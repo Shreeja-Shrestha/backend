@@ -4,7 +4,7 @@ const jwt = require("jsonwebtoken");
 const db = require("../config/db");
 
 const router = express.Router();
-
+const { sendOTPEmail } = require("../services/emailService");
 //SIGNUP 
 router.post("/signup", async (req, res) => {
   try {
@@ -81,31 +81,53 @@ router.post("/login", (req, res) => {
 });
 
 // FORGOT PASSWORD 
+const { sendOTPEmail } = require("../services/emailService");
+
 router.post("/forgot-password", async (req, res) => {
   const { email } = req.body;
 
   const sql = "SELECT * FROM users WHERE email = ?";
-  db.query(sql, [email], (err, rows) => {
+
+  db.query(sql, [email], async (err, rows) => {
     if (err) return res.status(500).json({ message: "Database error" });
-    if (rows.length === 0) return res.status(404).json({ message: "User not found" });
 
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    //  Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-const expiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
-const updateSql = "UPDATE users SET otp = ?, otp_expiry = ? WHERE email = ?";
-db.query(updateSql, [otp, expiry, email], (updateErr) => {
-  if (updateErr) return res.status(500).json({ message: "Error saving OTP" });
+    //  Expiry (5 minutes)
+    const expiry = new Date(Date.now() + 5 * 60 * 1000);
 
-  return res.json({ message: "OTP generated", otp });
-});    db.query(updateSql, [otp, email], (updateErr) => {
-      if (updateErr) return res.status(500).json({ message: "Error saving OTP" });
+    const updateSql = "UPDATE users SET otp = ?, otp_expiry = ? WHERE email = ?";
 
-      // For testing, we return OTP in response. Later send via email.
-      return res.json({ message: "OTP generated", otp });
+    db.query(updateSql, [otp, expiry, email], async (updateErr) => {
+      if (updateErr) {
+        return res.status(500).json({ message: "Error saving OTP" });
+      }
+
+      try {
+        // Send OTP via email
+        await sendOTPEmail(email, otp);
+
+        return res.json({
+          success: true,
+          message: "OTP sent to email"
+        });
+
+      } catch (emailError) {
+        console.error("Email Error:", emailError);
+
+        return res.status(500).json({
+          success: false,
+          message: "Failed to send OTP"
+        });
+      }
     });
   });
 });
-
 // RESET PASSWORD 
 router.post("/reset-password", async (req, res) => {
   const { email, otp, newPassword } = req.body;

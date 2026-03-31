@@ -6,9 +6,9 @@ exports.initiatePayment = (req, res) => {
     const { amount, purchase_order_id, purchase_order_name } = req.body;
 
     axios.post('https://a.khalti.com/api/v2/epayment/initiate/', {
-        "return_url": "khaltipay://payment-success", // Matches Flutter intent filter
+       "return_url": `http://172.20.10.2:3000/api/payment/payment-success?booking_id=${purchase_order_id}`, // Matches Flutter intent filter
         "website_url": "https://yourwebsite.com",
-        "amount": amount,
+        "amount": amount * 100,
         "purchase_order_id": purchase_order_id,
         "purchase_order_name": purchase_order_name,
     }, {
@@ -64,12 +64,25 @@ exports.createBooking = (req, res) => {
   );
 };
 exports.getUserBookings = (req, res) => {
-    const { userId } = req.params;
-    const sql = "SELECT * FROM tour_bookings WHERE user_id = ? ORDER BY travel_date DESC";
+  const userId = req.params.userId;
+
+    const sql = `
+    SELECT b.*, t.title
+    FROM tour_bookings b
+    JOIN tours t ON b.tour_id = t.id
+    WHERE b.user_id = ?
+    ORDER BY b.travel_date DESC
+    `;
 
     db.query(sql, [userId], (err, rows) => {
-        if (err) return res.status(500).json({ success: false, message: err.message });
-        res.status(200).json({ success: true, bookings: rows });
+        if (err) {
+            return res.status(500).json({
+                success: false,
+                message: err.message
+            });
+        }
+
+        res.status(200).json(rows); // simpler response for Flutter
     });
 };
 

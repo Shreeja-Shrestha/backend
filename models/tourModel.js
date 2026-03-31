@@ -98,3 +98,10 @@ exports.deleteTour = function (id, callback) {
   });
 
 };
+exports.getToursByCategory = function (category, callback) {
+
+  const sql = "SELECT * FROM tours WHERE category = ? ORDER BY created_at DESC";
+
+  db.query(sql, [category], callback);
+
+};

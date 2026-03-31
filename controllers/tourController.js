@@ -99,3 +99,19 @@ exports.deleteTour = function (req, res) {
 
   });
 };
+/* GET TOURS BY CATEGORY */
+exports.getToursByCategory = function (req, res) {
+
+  const category = req.params.category;
+
+  tourModel.getToursByCategory(category, function (err, result) {
+
+    if (err) {
+      return res.status(500).json(err);
+    }
+
+    res.json(result);
+
+  });
+
+};

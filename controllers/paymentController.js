@@ -27,8 +27,8 @@ exports.initiatePayment = async (req, res) => {
     const response = await axios.post(
       "https://a.khalti.com/api/v2/epayment/initiate/",
       {
-        return_url: `http://192.168.18.11:3000/api/payment/payment-success?booking_id=${booking_id}`,
-        website_url: "http://192.168.18.11:3000",
+        return_url: `http://172.20.10.2:3000/api/payment/payment-success?booking_id=${booking_id}`,
+        website_url: "http://172.20.10.2:3000",
         amount: amount * 100,
         purchase_order_id: booking_id.toString(),
         purchase_order_name: "Tour Booking Payment",
@@ -95,7 +95,7 @@ exports.paymentSuccess = async (req, res) => {
       const updateSql = `
         UPDATE tour_bookings
         SET payment_status='Paid',
-            booking_status='Confirmed',
+            booking_status='Pending',
             amount_paid=?,
             transaction_id=?
         WHERE pidx=?
@@ -138,31 +138,46 @@ db.query(bookingQuery, [pidx], (err, result) => {
   const userId = result[0].user_id;
   const tourId = result[0].tour_id;
   const travelDate = result[0].travel_date;
-  // 🔥 INSERT RECEIPT
-const receiptQuery = `
-INSERT INTO receipts
-(booking_id, user_id, tour_id, amount, transaction_id, payment_status)
-VALUES (?, ?, ?, ?, ?, ?)
+// 🔥 CHECK IF RECEIPT ALREADY EXISTS
+const checkReceiptQuery = `
+SELECT * FROM receipts WHERE booking_id = ?
 `;
 
-db.query(
-  receiptQuery,
-  [
-    bookingId,
-    userId,
-    tourId,
-    paymentData.total_amount / 100,
-    paymentData.transaction_id,
-    "Paid"
-  ],
-  (err) => {
-    if (err) {
-      console.log("Receipt insert error:", err);
-    } else {
-      console.log("Receipt created successfully");
-    }
+db.query(checkReceiptQuery, [bookingId], (err, existing) => {
+  if (err) {
+    console.log("Check receipt error:", err);
   }
-);
+
+  if (existing.length === 0) {
+    // INSERT ONLY IF NOT EXISTS
+    const receiptQuery = `
+    INSERT INTO receipts
+    (booking_id, user_id, tour_id, amount, transaction_id, payment_status)
+    VALUES (?, ?, ?, ?, ?, ?)
+    `;
+
+    db.query(
+      receiptQuery,
+      [
+        bookingId,
+        userId,
+        tourId,
+        paymentData.total_amount / 100,
+        paymentData.transaction_id,
+        "Paid"
+      ],
+      (err) => {
+        if (err) {
+          console.log("Receipt insert error:", err);
+        } else {
+          console.log("Receipt created successfully");
+        }
+      }
+    );
+  } else {
+    console.log("Receipt already exists, skipping insert");
+  }
+});
 
   const notificationQuery = `
   INSERT INTO notifications

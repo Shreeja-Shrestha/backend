@@ -10,5 +10,5 @@ router.get("/:id", tourController.getTourById);
 router.post("/", tourController.createTour);
 router.put("/:id", tourController.updateTour);
 router.delete("/:id", tourController.deleteTour);
-
+router.get("/category/:category", tourController.getToursByCategory);
 module.exports = router;

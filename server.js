@@ -3,20 +3,22 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const db = require("./config/db");
-
-const axios = require("axios");
-
-
 const app = express();
 
 app.use(cors());
-
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.use((req, res, next) => {
   console.log("REQUEST:", req.method, req.url);
   next();
 });
+
+const axios = require("axios");
+const path = require("path");
+
+app.use("/images", express.static(path.join(__dirname, "public/images")));
+console.log("Image path:", path.join(__dirname, "public/images"));
 
 const authRoutes = require("./routes/authRoutes");
 
@@ -29,11 +31,8 @@ app.use("/api/bookings", require("./routes/bookingRoutes"));
 
 const reviewRoutes = require('./routes/reviewRoutes');
 app.use('/api/reviews', reviewRoutes);
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 const eventRoutes = require('./routes/eventRoutes');
-app.use('/', eventRoutes);
-
+app.use('/api/events', eventRoutes);
 const hotelRoutes = require("./routes/hotelRoutes");
 app.use("/api/hotels", hotelRoutes);
 const otpRoutes = require("./routes/otpRoutes");
@@ -45,6 +44,10 @@ app.use("/api/search", searchRoutes);
 const userRoutes = require("./routes/userRoutes");
 app.use("/api/users", userRoutes);
 
+const settingsRoutes = require("./routes/settingsRoutes");
+
+app.use("/api/settings", settingsRoutes);
+
 const paymentRoutes = require("./routes/paymentRoutes");
 app.use("/api/payment", paymentRoutes);
 const favoriteRoutes = require("./routes/favoriteRoutes");
@@ -53,6 +56,8 @@ app.use("/api/favorites", favoriteRoutes);
 const tourRoutes = require("./routes/tourRoutes");
 
 app.use("/api/tours", tourRoutes);
+const receiptRoutes = require("./routes/receiptRoutes");
+app.use("/api", receiptRoutes);
 
 const notificationRoutes = require('./routes/notificationRoutes');
 
@@ -106,7 +111,7 @@ app.get("/booking-success", (req, res) => {
 
         <script>
           function goHome(){
-            window.location.href="http://192.168.18.11:3000";
+            window.location.href="http://172.20.10.2:3000";
           }
         </script>
 

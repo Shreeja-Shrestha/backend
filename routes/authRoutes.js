@@ -5,7 +5,7 @@ const db = require("../config/db");
 
 const router = express.Router();
 
-// ================== SIGNUP ==================
+//SIGNUP 
 router.post("/signup", async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
@@ -36,7 +36,7 @@ router.post("/signup", async (req, res) => {
   }
 });
 
-// ================== LOGIN ==================
+// LOGIN
 router.post("/login", (req, res) => {
   const { email, password } = req.body;
 
@@ -59,7 +59,7 @@ router.post("/login", (req, res) => {
 
     const token = jwt.sign(
       {
-        id: user.id,       // ⚠️ IMPORTANT: use id
+        id: user.id,       // IMPORTANT: use id
         email: user.email,
         role: user.role
       },
@@ -80,7 +80,7 @@ router.post("/login", (req, res) => {
   });
 });
 
-// ================== FORGOT PASSWORD ==================
+// FORGOT PASSWORD 
 router.post("/forgot-password", async (req, res) => {
   const { email } = req.body;
 
@@ -90,9 +90,14 @@ router.post("/forgot-password", async (req, res) => {
     if (rows.length === 0) return res.status(404).json({ message: "User not found" });
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
+const expiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
-    const updateSql = "UPDATE users SET otp = ? WHERE email = ?";
-    db.query(updateSql, [otp, email], (updateErr) => {
+const updateSql = "UPDATE users SET otp = ?, otp_expiry = ? WHERE email = ?";
+db.query(updateSql, [otp, expiry, email], (updateErr) => {
+  if (updateErr) return res.status(500).json({ message: "Error saving OTP" });
+
+  return res.json({ message: "OTP generated", otp });
+});    db.query(updateSql, [otp, email], (updateErr) => {
       if (updateErr) return res.status(500).json({ message: "Error saving OTP" });
 
       // For testing, we return OTP in response. Later send via email.
@@ -101,19 +106,32 @@ router.post("/forgot-password", async (req, res) => {
   });
 });
 
-// ================== RESET PASSWORD ==================
+// RESET PASSWORD 
 router.post("/reset-password", async (req, res) => {
   const { email, otp, newPassword } = req.body;
 
-  const sql = "SELECT * FROM users WHERE email = ? AND otp = ?";
-  db.query(sql, [email, otp], async (err, rows) => {
+  const sql = "SELECT * FROM users WHERE email = ?";
+    db.query(sql, [email, otp], async (err, rows) => {
     if (err) return res.status(500).json({ message: "Database error" });
-    if (rows.length === 0) return res.status(400).json({ message: "Invalid OTP" });
+    if (rows.length === 0) {
+  return res.status(400).json({ message: "User not found" });
+}
 
+const user = rows[0];
+
+/// WRONG OTP
+if (user.otp !== otp) {
+  return res.status(400).json({ message: "Invalid OTP" });
+}
+
+///EXPIRED OTP
+if (!user.otp_expiry || new Date() > new Date(user.otp_expiry)) {
+  return res.status(400).json({ message: "OTP expired" });
+}
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    const updateSql = "UPDATE users SET password = ?, otp = NULL WHERE email = ?";
-    db.query(updateSql, [hashedPassword, email], (updateErr) => {
+    const updateSql = "UPDATE users SET password = ?, otp = NULL, otp_expiry = NULL WHERE email = ?";
+        db.query(updateSql, [hashedPassword, email], (updateErr) => {
       if (updateErr) return res.status(500).json({ message: "Update failed" });
       return res.json({ message: "Password reset successful" });
     });

@@ -36,7 +36,7 @@ exports.searchTours = (req, res) => {
       });
     }
 
-    // 🔥 KEY UPGRADE: fallback if empty
+    // KEY UPGRADE: fallback if empty
     if (results.length === 0) {
       const fallbackSql = `
         SELECT * FROM tours

@@ -81,14 +81,16 @@ router.post("/login", (req, res) => {
 });
 
 // FORGOT PASSWORD 
-const { sendOTPEmail } = require("../services/emailService");
+
 
 router.post("/forgot-password", async (req, res) => {
+  
   const { email } = req.body;
-
+console.log("EMAIL RECEIVED:", email);
   const sql = "SELECT * FROM users WHERE email = ?";
 
   db.query(sql, [email], async (err, rows) => {
+    console.log("DB RESULT:", rows);
     if (err) return res.status(500).json({ message: "Database error" });
 
     if (rows.length === 0) {

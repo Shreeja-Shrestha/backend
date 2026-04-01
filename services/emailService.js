@@ -9,14 +9,23 @@ const transporter = nodemailer.createTransport({
 });
 
 const sendOTPEmail = async (email, otp) => {
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: email,
-    subject: "Your OTP Code",
-    html: `<h2>Your OTP is ${otp}</h2>`
-  };
+  try {
+    console.log("Sending OTP to:", email);
 
-  await transporter.sendMail(mailOptions);
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Your OTP Code",
+      html: `<h2>Your OTP is ${otp}</h2>`
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+
+    console.log("Email sent:", info.response);
+
+  } catch (error) {
+    console.error("Email sending failed:", error);
+    throw error; // important
+  }
 };
-
 module.exports = { sendOTPEmail };

@@ -6,7 +6,7 @@ exports.initiatePayment = (req, res) => {
     const { amount, purchase_order_id, purchase_order_name } = req.body;
 
     axios.post('https://a.khalti.com/api/v2/epayment/initiate/', {
-       "return_url": `http://172.20.10.2:3000/api/payment/payment-success?booking_id=${purchase_order_id}`, // Matches Flutter intent filter
+       "return_url": `http://192.168.18.11:3000/api/payment/payment-success?booking_id=${purchase_order_id}`, // Matches Flutter intent filter
         "website_url": "https://yourwebsite.com",
         "amount": amount * 100,
         "purchase_order_id": purchase_order_id,

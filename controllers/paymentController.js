@@ -27,8 +27,8 @@ exports.initiatePayment = async (req, res) => {
     const response = await axios.post(
       "https://a.khalti.com/api/v2/epayment/initiate/",
       {
-        return_url: `http://172.20.10.2:3000/api/payment/payment-success?booking_id=${booking_id}`,
-        website_url: "http://172.20.10.2:3000",
+        return_url: `http://192.168.18.11:3000/api/payment/payment-success?booking_id=${booking_id}`,
+        website_url: "http://192.168.18.11:3000",
         amount: amount * 100,
         purchase_order_id: booking_id.toString(),
         purchase_order_name: "Tour Booking Payment",

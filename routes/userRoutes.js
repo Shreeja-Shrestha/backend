@@ -29,9 +29,7 @@ router.get("/profile/:id", (req, res) => {
 
 /// UPDATE USER PROFILE
 router.put("/update", (req, res) => {
-  console.log("HEADERS:", req.headers);
-  console.log("BODY:", req.body);
-
+  
 const { id, name, email, tagline } = req.body || {};  if (!id) {
     return res.status(400).json({ error: "User ID required" });
   }

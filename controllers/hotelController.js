@@ -64,9 +64,9 @@ exports.getNearestHotel = async (req, res) => {
       return res.json(cachedHotels);
     }
 
-    // =========================
+    
     // OVERPASS QUERY
-    // =========================
+    
     const overpassQuery = `
       [out:json][timeout:25];
       (
@@ -91,9 +91,9 @@ exports.getNearestHotel = async (req, res) => {
       return res.json([]);
     }
 
-    // =========================
+    
     // CALCULATE DISTANCE
-    // =========================
+  
     const results = hotels.map(hotel => {
 
       const distance = calculateDistance(

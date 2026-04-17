@@ -1,8 +1,8 @@
 const db = require("../config/db");
 
-/* =========================
+/* 
    ADD TOUR PACKAGE (ADMIN)
-========================= */
+*/
 exports.addPackage = (req, res) => {
   const {
     title,
@@ -51,9 +51,9 @@ exports.getPackages = (req, res) => {
   });
 };
 
-/* =========================
+/* 
    UPDATE PACKAGE (ADMIN)
-========================= */
+ */
 exports.updatePackage = (req, res) => {
   const { id } = req.params;
   const {
@@ -84,9 +84,9 @@ exports.updatePackage = (req, res) => {
   );
 };
 
-/* =========================
+/* 
    DELETE PACKAGE (ADMIN)
-========================= */
+ */
 exports.deletePackage = (req, res) => {
   const { id } = req.params;
 

@@ -138,7 +138,7 @@ db.query(bookingQuery, [pidx], (err, result) => {
   const userId = result[0].user_id;
   const tourId = result[0].tour_id;
   const travelDate = result[0].travel_date;
-// 🔥 CHECK IF RECEIPT ALREADY EXISTS
+// CHECK IF RECEIPT ALREADY EXISTS
 const checkReceiptQuery = `
 SELECT * FROM receipts WHERE booking_id = ?
 `;

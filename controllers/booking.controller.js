@@ -14,7 +14,7 @@ exports.initiatePayment = (req, res) => {
     }, {
         headers: { 'Authorization': 'Key 9e601b866fff445197196b3e7407c2ac' }
     })
-    .then(response => res.json(response.data))
+    .then(response => res.json(response.data))//correct vayo vane chai frontend ma payment url pathaidinxa 
     .catch(err => {
         console.error("Khalti Error:", err.response?.data || err.message);
         res.status(500).json({ error: "Failed to initiate payment" });
@@ -63,6 +63,7 @@ exports.createBooking = (req, res) => {
     }
   );
 };
+// fetching specific user data from the dtabase
 exports.getUserBookings = (req, res) => {
   const userId = req.params.userId;
 

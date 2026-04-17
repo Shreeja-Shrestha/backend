@@ -4,7 +4,7 @@ exports.searchTours = (req, res) => {
   const query = req.query.q;
 
   if (!query) {
-    return res.status(200).json([]); // 🔥 don't break UI
+    return res.status(200).json([]); // don't break UI
   }
 
   const sql = `
@@ -36,7 +36,7 @@ exports.searchTours = (req, res) => {
       });
     }
 
-    // KEY UPGRADE: fallback if empty
+    // fallback if empty
     if (results.length === 0) {
       const fallbackSql = `
         SELECT * FROM tours

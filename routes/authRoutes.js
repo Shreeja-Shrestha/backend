@@ -3,10 +3,10 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const db = require("../config/db");
 
-const router = express.Router();
+const router = express.Router();//Used to define API routes like /signup, /login
 const { sendOTPEmail } = require("../services/emailService");
 //SIGNUP 
-router.post("/signup", async (req, res) => {
+router.post("/signup", async (req, res) => {//define API endpoint
   try {
     const { name, email, password, role } = req.body;
 

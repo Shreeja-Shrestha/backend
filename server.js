@@ -58,7 +58,8 @@ const tourRoutes = require("./routes/tourRoutes");
 app.use("/api/tours", tourRoutes);
 const receiptRoutes = require("./routes/receiptRoutes");
 app.use("/api", receiptRoutes);
-
+const chatRoutes = require("./routes/chatRoutes");
+app.use("/api", chatRoutes);
 const notificationRoutes = require('./routes/notificationRoutes');
 
 app.use('/api/notifications', notificationRoutes);

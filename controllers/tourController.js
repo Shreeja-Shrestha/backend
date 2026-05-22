@@ -1,6 +1,6 @@
 const tourModel = require("../models/tourModel");
 
-
+const db = require("../config/db");
 /* GET ALL TOURS */
 exports.getTours = function (req, res) {
 
@@ -114,4 +114,36 @@ exports.getToursByCategory = function (req, res) {
 
   });
 
+};
+exports.getHomeTours = function (req, res) {
+  const sql = `
+    SELECT * FROM tours
+    WHERE category IS NOT NULL
+    AND TRIM(LOWER(category)) NOT IN ('food', 'outdoor', 'water')
+    ORDER BY created_at DESC
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("DB ERROR:", err);
+      return res.status(500).json(err);
+    }
+
+    res.json(results);
+  });
+};
+exports.getToursByCategoryAndSubcategory = function (req, res) {
+  const { category, subcategory } = req.params;
+
+  tourModel.getToursByCategoryAndSubcategory(
+    category,
+    subcategory,
+    function (err, result) {
+      if (err) {
+        return res.status(500).json(err);
+      }
+
+      res.json(result);
+    }
+  );
 };

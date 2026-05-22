@@ -1,40 +1,69 @@
 const axios = require("axios");
 const db = require("../config/db");
 
-// Haversine Distance Formula
+const GEOAPIFY_API_KEY = process.env.GEOAPIFY_API_KEY;
+
+// =========================
+// Haversine Formula
+// =========================
 function calculateDistance(lat1, lon1, lat2, lon2) {
   const R = 6371;
-  const toRad = val => val * Math.PI / 180;
+  const toRad = (val) => (val * Math.PI) / 180;
 
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
 
   const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.sin(dLat / 2) ** 2 +
     Math.cos(toRad(lat1)) *
-    Math.cos(toRad(lat2)) *
-    Math.sin(dLon / 2) *
-    Math.sin(dLon / 2);
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) ** 2;
 
   return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 }
 
+// =========================
+// MAIN CONTROLLER
+// =========================
 exports.getNearestHotel = async (req, res) => {
-  const { lat, lng } = req.query;
+  const { tour_id } = req.query;
 
-  const latNum = parseFloat(lat);
-  const lngNum = parseFloat(lng);
-
-  if (isNaN(latNum) || isNaN(lngNum)) {
-    return res.status(400).json({ message: "Invalid latitude or longitude" });
+  if (!tour_id) {
+    return res.status(400).json({ message: "tour_id is required" });
   }
 
   try {
+    // =========================
+    // GET TOUR LOCATION
+    // =========================
+    const tour = await new Promise((resolve, reject) => {
+      db.query(
+        "SELECT latitude, longitude FROM tours WHERE id = ?",
+        [tour_id],
+        (err, result) => {
+          if (err) reject(err);
+          else resolve(result);
+        }
+      );
+    });
 
-    console.log("Searching hotels near:", latNum, lngNum);
+    if (!tour || tour.length === 0) {
+      return res.status(404).json({ message: "Tour not found" });
+    }
+
+    const latNum = Number(tour[0].latitude);
+    const lngNum = Number(tour[0].longitude);
+
+    console.log("Tour location:", latNum, lngNum);
+
+    if (isNaN(latNum) || isNaN(lngNum)) {
+      return res.status(400).json({
+        message: "Invalid coordinates",
+      });
+    }
 
     // =========================
-    // CHECK CACHE IN DATABASE
+    // CHECK CACHE FIRST
     // =========================
     const cachedHotels = await new Promise((resolve) => {
       db.query(
@@ -43,11 +72,9 @@ exports.getNearestHotel = async (req, res) => {
                 hotel_lng AS longitude,
                 distance_km
          FROM nearest_hotels
-         WHERE ABS(search_lat - ?) < 0.01
-         AND ABS(search_lng - ?) < 0.01
-         ORDER BY created_at DESC
-         LIMIT 50`,
-        [latNum, lngNum],
+         WHERE tour_id = ?
+         ORDER BY distance_km ASC`,
+        [tour_id],
         (err, rows) => {
           if (err) {
             console.error("DB Error:", err);
@@ -64,94 +91,119 @@ exports.getNearestHotel = async (req, res) => {
       return res.json(cachedHotels);
     }
 
-    
-    // OVERPASS QUERY
-    
-    const overpassQuery = `
-      [out:json][timeout:25];
-      (
-        node["tourism"~"hotel|guest_house|motel|lodge"](around:20000,${latNum},${lngNum});
+    // =========================
+    // GEOAPIFY API CALL
+    // =========================
+    let hotels = [];
+
+    try {
+      const response = await axios.get(
+        "https://api.geoapify.com/v2/places",
+        {
+          params: {
+            categories: "accommodation", // broader results
+            filter: `circle:${lngNum},${latNum},20000`,
+            limit: 20,
+            apiKey: GEOAPIFY_API_KEY,
+          },
+        }
       );
-      out body;
-    `;
 
-    const response = await axios.get(
-      "https://overpass-api.de/api/interpreter",
-      {
-        params: { data: overpassQuery },
-        timeout: 20000
-      }
-    );
+      hotels = response.data.features;
 
-    const hotels = response.data.elements;
+      console.log("Hotels fetched:", hotels.length);
 
-    console.log("Hotels found:", hotels.length);
+    } catch (err) {
+      console.error("Geoapify failed:", err.message);
 
-    if (!hotels || hotels.length === 0) {
-      return res.json([]);
+      return res.json([
+        {
+          name: "Hotel data unavailable",
+          latitude: latNum,
+          longitude: lngNum,
+          distance_km: 0,
+        },
+      ]);
     }
 
-    
-    // CALCULATE DISTANCE
-  
-    const results = hotels.map(hotel => {
+    // =========================
+    // NO DATA CASE
+    // =========================
+    if (!hotels || hotels.length === 0) {
+      return res.json([
+        {
+          name: "No hotels found nearby",
+          latitude: latNum,
+          longitude: lngNum,
+          distance_km: 0,
+        },
+      ]);
+    }
 
-      const distance = calculateDistance(
-        latNum,
-        lngNum,
-        hotel.lat,
-        hotel.lon
-      );
+    // =========================
+    // PROCESS DATA
+    // =========================
+    const results = hotels
+      .map((h) => {
+        const hotelLat = h.properties.lat;
+        const hotelLng = h.properties.lon;
 
-      return {
-        name: hotel.tags?.name || "Unnamed Hotel",
-        latitude: hotel.lat,
-        longitude: hotel.lon,
-        distance_km: parseFloat(distance.toFixed(2))
-      };
-    });
+        if (!hotelLat || !hotelLng) return null;
 
+        const distance = calculateDistance(
+          latNum,
+          lngNum,
+          hotelLat,
+          hotelLng
+        );
 
-    // SORT BY NEAREST
-   
+        return {
+          name: h.properties.name || "Unnamed Hotel",
+          latitude: hotelLat,
+          longitude: hotelLng,
+          distance_km: Number(distance.toFixed(2)),
+        };
+      })
+      .filter(Boolean);
+
     results.sort((a, b) => a.distance_km - b.distance_km);
 
-    const topHotels = results.slice(0, 50);
+    // =========================
+    // SAVE CACHE (ONLY IF DATA EXISTS)
+    // =========================
+    if (results.length > 0) {
+      await new Promise((resolve) => {
+        db.query(
+          "DELETE FROM nearest_hotels WHERE tour_id = ?",
+          [tour_id],
+          () => resolve()
+        );
+      });
 
-
-// SAVE TOP 10 HOTELS
-
-topHotels.forEach((hotel) => {
-  db.query(
-    `INSERT INTO nearest_hotels
-     (search_lat, search_lng, hotel_name, hotel_lat, hotel_lng, distance_km)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-    [
-      latNum,
-      lngNum,
-      hotel.name,
-      hotel.latitude,
-      hotel.longitude,
-      hotel.distance_km
-    ],
-    (err) => {
-      if (err) {
-        console.error("Database Insert Error:", err);
-      }
+      results.forEach((hotel) => {
+        db.query(
+          `INSERT INTO nearest_hotels
+           (tour_id, search_lat, search_lng, hotel_name, hotel_lat, hotel_lng, distance_km)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [
+            tour_id,
+            latNum,
+            lngNum,
+            hotel.name,
+            hotel.latitude,
+            hotel.longitude,
+            hotel.distance_km,
+          ]
+        );
+      });
     }
-  );
-});
 
-console.log("Top hotels saved to cache");
-
-    return res.json(topHotels);
+    return res.json(results);
 
   } catch (error) {
-
-    console.error("Overpass Error:", error.response?.data || error.message);
-
+    console.error("Error:", error.message);
     return res.status(500).json({
-      message: "Error fetching hotels"
+      message: "Server error",
     });
   }
 };

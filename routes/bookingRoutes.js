@@ -8,7 +8,7 @@ router.post("/create", bookingController.createBooking);
 // get bookings by user
 router.get("/user/:userId", bookingController.getUserBookings);
 
-// cancel booking
-router.delete("/cancel/:id", bookingController.deleteBooking);
+// cancel booking (admin)
+router.put("/cancel-admin/:id", bookingController.deleteBooking);
 
 module.exports = router;

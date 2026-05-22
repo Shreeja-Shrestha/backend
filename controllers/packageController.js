@@ -10,6 +10,8 @@ exports.addPackage = (req, res) => {
     price,
     duration,
     category,
+    subcategory,
+    difficulty,
     description,
     image,
     created_by
@@ -17,32 +19,46 @@ exports.addPackage = (req, res) => {
 
   const sql = `
     INSERT INTO packages
-    (title, destination, price, duration, category, description, image, created_by)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    (title, destination, price, duration, category, subcategory, difficulty, description, image, created_by)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   db.query(
     sql,
-    [title, destination, price, duration, category, description, image, created_by],
+    [
+      title,
+      destination,
+      price,
+      duration,
+      category,
+      subcategory,
+      difficulty,
+      description,
+      image,
+      created_by
+    ],
     (err, result) => {
       if (err) {
+        console.error("ADD PACKAGE ERROR:", err);
         return res.status(500).json({ error: err.message });
       }
-      res.json({ message: "Package added successfully", id: result.insertId });
+
+      res.json({
+        message: "Package added successfully",
+        id: result.insertId
+      });
     }
   );
 };
-
 /* =========================
    GET ALL PACKAGES
 ========================= */
 exports.getPackages = (req, res) => {
   const sql = `
-    SELECT id, title, destination, price, duration, category, description, image, created_by
-    FROM packages
-    ORDER BY id DESC
-  `;
-
+  SELECT id, title, destination, price, duration, category, subcategory, difficulty, description, image, created_by
+  FROM packages
+  ORDER BY id DESC
+`;
   db.query(sql, (err, results) => {
     if (err) {
       return res.status(500).json({ error: err.message });
@@ -56,34 +72,49 @@ exports.getPackages = (req, res) => {
  */
 exports.updatePackage = (req, res) => {
   const { id } = req.params;
+
   const {
     title,
     destination,
     price,
     duration,
     category,
+    subcategory,
+    difficulty,
     description,
     image
   } = req.body;
 
   const sql = `
     UPDATE packages
-    SET title=?, destination=?, price=?, duration=?, category=?, description=?, image=?
+    SET title=?, destination=?, price=?, duration=?, category=?, subcategory=?, difficulty=?, description=?, image=?
     WHERE id=?
   `;
 
   db.query(
     sql,
-    [title, destination, price, duration, category, description, image, id],
+    [
+      title,
+      destination,
+      price,
+      duration,
+      category,
+      subcategory,
+      difficulty,
+      description,
+      image,
+      id
+    ],
     err => {
       if (err) {
+        console.error("UPDATE PACKAGE ERROR:", err);
         return res.status(500).json({ error: err.message });
       }
+
       res.json({ message: "Package updated successfully" });
     }
   );
 };
-
 /* 
    DELETE PACKAGE (ADMIN)
  */

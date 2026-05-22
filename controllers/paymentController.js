@@ -34,8 +34,8 @@ exports.initiatePayment = async (req, res) => {
         const response = await axios.post(
           "https://a.khalti.com/api/v2/epayment/initiate/",
           {
-            return_url: "http://172.20.10.2:3000/api/payment/payment-success",
-            website_url: "http://172.20.10.2:3000",
+            return_url: "https://backend-production-551c.up.railway.app/api/payment/payment-success",
+            website_url: "https://backend-production-551c.up.railway.app",
             amount: amount * 100,
             purchase_order_id: booking_id.toString(),
             purchase_order_name: "Tour Booking",
@@ -56,11 +56,11 @@ exports.initiatePayment = async (req, res) => {
           [pidx, booking_id],
           (err) => {
             if (err) {
-              console.log("❌ DB Error saving pidx:", err);
+              console.log(" DB Error saving pidx:", err);
               return res.status(500).json({ error: "Failed to save pidx" });
             }
 
-            console.log("✅ pidx saved:", pidx);
+            console.log(" pidx saved:", pidx);
 
             res.json({
               success: true,
@@ -72,7 +72,7 @@ exports.initiatePayment = async (req, res) => {
       }
     );
   } catch (error) {
-    console.log("❌ Payment initiation error:", error.message);
+    console.log(" Payment initiation error:", error.message);
     res.status(500).json({ error: error.message });
   }
 };
@@ -118,16 +118,16 @@ exports.paymentSuccess = async (req, res) => {
         (err, updateResult) => {
 
           if (err) {
-            console.log("❌ Update error:", err);
+            console.log(" Update error:", err);
             return res.send("DB error");
           }
 
           if (updateResult.affectedRows === 0) {
-            console.log("❌ No booking updated for pidx:", pidx);
+            console.log(" No booking updated for pidx:", pidx);
             return res.send("Booking not updated");
           }
 
-          console.log("✅ Booking updated for pidx:", pidx);
+          console.log(" Booking updated for pidx:", pidx);
 
           // FETCH BOOKING
           db.query(
@@ -136,7 +136,7 @@ exports.paymentSuccess = async (req, res) => {
             (err, result) => {
 
               if (err || !result || result.length === 0) {
-                console.log("❌ Booking not found after update:", pidx);
+                console.log(" Booking not found after update:", pidx);
                 return res.send("Booking not found");
               }
 
@@ -144,7 +144,7 @@ exports.paymentSuccess = async (req, res) => {
               const userId = result[0].user_id;
               const travelDate = result[0].travel_date;
 
-              console.log("✅ Booking found:", bookingId);
+              console.log("Booking found:", bookingId);
 
               // USER NOTIFICATION
               db.query(
@@ -158,8 +158,8 @@ exports.paymentSuccess = async (req, res) => {
                   bookingId
                 ],
                 (err) => {
-                  if (err) console.log("❌ User notification error:", err);
-                  else console.log("✅ User notification inserted");
+                  if (err) console.log(" User notification error:", err);
+                  else console.log("User notification inserted");
                 }
               );
 
@@ -175,8 +175,8 @@ exports.paymentSuccess = async (req, res) => {
                   bookingId
                 ],
                 (err) => {
-                  if (err) console.log("❌ Admin notification error:", err);
-                  else console.log("✅ Admin notification inserted");
+                  if (err) console.log(" Admin notification error:", err);
+                  else console.log(" Admin notification inserted");
                 }
               );
 
@@ -187,12 +187,12 @@ exports.paymentSuccess = async (req, res) => {
       );
 
     } else {
-      console.log("⚠️ Payment not completed:", paymentData.status);
+      console.log(" Payment not completed:", paymentData.status);
       res.send("Payment not completed");
     }
 
   } catch (error) {
-    console.log("❌ Payment verification error:", error.message);
+    console.log(" Payment verification error:", error.message);
     res.status(500).send("Error verifying payment");
   }
 };
@@ -224,7 +224,7 @@ exports.verifyPayment = async (req, res) => {
     }
 
   } catch (err) {
-    console.log("❌ Verify error:", err.message);
+    console.log(" Verify error:", err.message);
     res.status(500).json({ error: err.message });
   }
 };

@@ -36,7 +36,7 @@ exports.initiatePayment = (req, res) => {
 
         //  Call Khalti
         axios.post('https://a.khalti.com/api/v2/epayment/initiate/', {
-            return_url: `http://192.168.18.11:3000/api/payment/payment-success`,
+            return_url: `https://backend-production-551c.up.railway.app/api/payment/payment-success`,
             website_url: "https://yourwebsite.com",
             amount: amount * 100,
             purchase_order_id: purchase_order_id,

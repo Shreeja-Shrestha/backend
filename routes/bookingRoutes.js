@@ -8,6 +8,9 @@ router.post("/create", bookingController.createBooking);
 // get total bookings for admin dashboard
 router.get("/total", bookingController.getTotalBookings);
 
+// get monthly booking stats for graph
+router.get("/monthly-stats", bookingController.getMonthlyBookingStats);
+
 // get bookings by user
 router.get("/user/:userId", bookingController.getUserBookings);
 

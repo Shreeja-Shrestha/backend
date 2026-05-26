@@ -304,3 +304,30 @@ exports.getTotalBookings = (req, res) => {
     });
   });
 };
+// =========================
+// GET MONTHLY BOOKING STATS
+// =========================
+exports.getMonthlyBookingStats = (req, res) => {
+  const sql = `
+    SELECT 
+      DATE_FORMAT(created_at, '%b') AS month,
+      MONTH(created_at) AS monthNumber,
+      COUNT(*) AS count
+    FROM tour_bookings
+    GROUP BY MONTH(created_at), DATE_FORMAT(created_at, '%b')
+    ORDER BY monthNumber
+  `;
+
+  db.query(sql, (err, result) => {
+    if (err) {
+      console.log("MONTHLY BOOKING STATS ERROR:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch monthly booking stats",
+        error: err.message,
+      });
+    }
+
+    res.status(200).json(result);
+  });
+};

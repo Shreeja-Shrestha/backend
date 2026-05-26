@@ -13,7 +13,7 @@ router.post("/report", (req, res) => {
     });
   }
 
-  // Change this admin ID if your admin user has different id
+  // Change this if your real admin ID is different
   const adminUserId = 10;
 
   const title = "New Support Issue";
@@ -27,14 +27,7 @@ router.post("/report", (req, res) => {
 
   db.query(
     sql,
-    [
-      adminUserId,
-      title,
-      notificationMessage,
-      "support",
-      user_id,
-      0,
-    ],
+    [adminUserId, title, notificationMessage, "support", user_id, 0],
     (err, result) => {
       if (err) {
         console.log("SUPPORT NOTIFICATION ERROR:", err);

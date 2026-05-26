@@ -304,7 +304,7 @@ exports.getTotalBookings = (req, res) => {
     });
   });
 };
-// =========================
+
 // GET MONTHLY BOOKING STATS
 // =========================
 exports.getMonthlyBookingStats = (req, res) => {

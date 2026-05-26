@@ -280,3 +280,27 @@ exports.deleteBooking = (req, res) => {
 
     });
 };
+// =========================
+// GET TOTAL BOOKINGS
+// =========================
+exports.getTotalBookings = (req, res) => {
+  const sql = `
+    SELECT COUNT(*) AS total
+    FROM tour_bookings
+  `;
+
+  db.query(sql, (err, result) => {
+    if (err) {
+      console.log("TOTAL BOOKINGS ERROR:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch total bookings",
+        error: err.message,
+      });
+    }
+
+    res.status(200).json({
+      total: result[0].total,
+    });
+  });
+};

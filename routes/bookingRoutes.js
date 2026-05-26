@@ -5,6 +5,9 @@ const bookingController = require("../controllers/booking.controller");
 // create booking
 router.post("/create", bookingController.createBooking);
 
+// get total bookings for admin dashboard
+router.get("/total", bookingController.getTotalBookings);
+
 // get bookings by user
 router.get("/user/:userId", bookingController.getUserBookings);
 

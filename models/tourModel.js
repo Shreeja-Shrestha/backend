@@ -51,13 +51,33 @@ async function getCoordinatesFromDestination(destination) {
 
 /* GET ALL TOURS */
 exports.getAllTours = function (callback) {
-  const sql = "SELECT * FROM tours ORDER BY created_at DESC";
+  const sql = `
+    SELECT 
+      t.*,
+      COALESCE(ROUND(AVG(r.rating), 1), 0) AS average_rating,
+      COUNT(r.id) AS review_count
+    FROM tours t
+    LEFT JOIN ratings r ON t.id = r.tour_id
+    GROUP BY t.id
+    ORDER BY t.created_at DESC
+  `;
+
   db.query(sql, callback);
 };
 
 /* GET TOUR BY ID */
 exports.getTourById = function (id, callback) {
-  const sql = "SELECT * FROM tours WHERE id = ?";
+  const sql = `
+    SELECT 
+      t.*,
+      COALESCE(ROUND(AVG(r.rating), 1), 0) AS average_rating,
+      COUNT(r.id) AS review_count
+    FROM tours t
+    LEFT JOIN ratings r ON t.id = r.tour_id
+    WHERE t.id = ?
+    GROUP BY t.id
+  `;
+
   db.query(sql, [id], callback);
 };
 
@@ -168,7 +188,18 @@ exports.deleteTour = function (id, callback) {
 
 /* GET TOURS BY CATEGORY */
 exports.getToursByCategory = function (category, callback) {
-  const sql = "SELECT * FROM tours WHERE category = ? ORDER BY created_at DESC";
+  const sql = `
+    SELECT 
+      t.*,
+      COALESCE(ROUND(AVG(r.rating), 1), 0) AS average_rating,
+      COUNT(r.id) AS review_count
+    FROM tours t
+    LEFT JOIN ratings r ON t.id = r.tour_id
+    WHERE t.category = ?
+    GROUP BY t.id
+    ORDER BY t.created_at DESC
+  `;
+
   db.query(sql, [category], callback);
 };
 
@@ -179,10 +210,16 @@ exports.getToursByCategoryAndSubcategory = function (
   callback
 ) {
   const sql = `
-    SELECT * FROM tours
-    WHERE LOWER(TRIM(category)) = LOWER(TRIM(?))
-    AND LOWER(TRIM(subcategory)) = LOWER(TRIM(?))
-    ORDER BY created_at DESC
+    SELECT 
+      t.*,
+      COALESCE(ROUND(AVG(r.rating), 1), 0) AS average_rating,
+      COUNT(r.id) AS review_count
+    FROM tours t
+    LEFT JOIN ratings r ON t.id = r.tour_id
+    WHERE LOWER(TRIM(t.category)) = LOWER(TRIM(?))
+    AND LOWER(TRIM(t.subcategory)) = LOWER(TRIM(?))
+    GROUP BY t.id
+    ORDER BY t.created_at DESC
   `;
 
   db.query(sql, [category, subcategory], callback);

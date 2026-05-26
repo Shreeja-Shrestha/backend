@@ -117,10 +117,16 @@ exports.getToursByCategory = function (req, res) {
 };
 exports.getHomeTours = function (req, res) {
   const sql = `
-    SELECT * FROM tours
-    WHERE category IS NOT NULL
-    AND TRIM(LOWER(category)) NOT IN ('food', 'outdoor', 'water')
-    ORDER BY created_at DESC
+    SELECT 
+      t.*,
+      COALESCE(ROUND(AVG(r.rating), 1), 0) AS average_rating,
+      COUNT(r.id) AS review_count
+    FROM tours t
+    LEFT JOIN ratings r ON t.id = r.tour_id
+    WHERE t.category IS NOT NULL
+    AND TRIM(LOWER(t.category)) NOT IN ('food', 'outdoor', 'water')
+    GROUP BY t.id
+    ORDER BY t.created_at DESC
   `;
 
   db.query(sql, (err, results) => {

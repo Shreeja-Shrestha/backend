@@ -307,14 +307,18 @@ exports.getTotalBookings = (req, res) => {
 
 // GET MONTHLY BOOKING STATS
 // =========================
+// =========================
+// GET MONTHLY BOOKING STATS BY TRAVEL DATE
+// =========================
 exports.getMonthlyBookingStats = (req, res) => {
   const sql = `
     SELECT 
-      DATE_FORMAT(created_at, '%b') AS month,
-      MONTH(created_at) AS monthNumber,
+      DATE_FORMAT(travel_date, '%b') AS month,
+      MONTH(travel_date) AS monthNumber,
       COUNT(*) AS count
     FROM tour_bookings
-    GROUP BY MONTH(created_at), DATE_FORMAT(created_at, '%b')
+    WHERE travel_date IS NOT NULL
+    GROUP BY MONTH(travel_date), DATE_FORMAT(travel_date, '%b')
     ORDER BY monthNumber
   `;
 

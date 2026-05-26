@@ -29,7 +29,8 @@ app.use("/api/packages", require("./routes/packageRoutes"));
 //app.use("/api/bookings", require("./routes/bookingRoutes"));
 // FIX: Using bookingRoutes.js as the filename
 app.use("/api/bookings", require("./routes/bookingRoutes"));
-
+const supportRoutes = require("./routes/supportRoutes");
+app.use("/api/support", supportRoutes);
 const reviewRoutes = require('./routes/reviewRoutes');
 app.use('/api/reviews', reviewRoutes);
 

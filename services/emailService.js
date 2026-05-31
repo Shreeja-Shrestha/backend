@@ -1,34 +1,14 @@
-const nodemailer = require("nodemailer");
-const dns = require("dns");
+const { Resend } = require("resend");
 
-// Force Railway to use IPv4 instead of IPv6
-dns.setDefaultResultOrder("ipv4first");
-
-console.log("EMAIL_USER:", process.env.EMAIL_USER);
-console.log("EMAIL_PASS exists:", !!process.env.EMAIL_PASS);
-
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
-  requireTLS: true,
-
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-
-  connectionTimeout: 20000,
-  greetingTimeout: 20000,
-  socketTimeout: 20000,
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const sendOTPEmail = async (email, otp) => {
   try {
     console.log("Sending OTP to:", email);
+    console.log("RESEND_API_KEY exists:", !!process.env.RESEND_API_KEY);
 
-    const info = await transporter.sendMail({
-      from: `"Sanskriti Yatra" <${process.env.EMAIL_USER}>`,
+    const result = await resend.emails.send({
+      from: "Sanskriti Yatra <onboarding@resend.dev>",
       to: email,
       subject: "Your Password Reset OTP Code",
       html: `
@@ -39,8 +19,8 @@ const sendOTPEmail = async (email, otp) => {
       `,
     });
 
-    console.log("Email sent successfully:", info.response);
-    return info;
+    console.log("Email sent successfully:", result);
+    return result;
   } catch (error) {
     console.error("Email sending failed:", error);
     throw error;

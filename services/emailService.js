@@ -1,14 +1,17 @@
-const { Resend } = require("resend");
+const nodemailer = require("nodemailer");
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
 
 const sendOTPEmail = async (email, otp) => {
   try {
-    console.log("Sending OTP to:", email);
-    console.log("RESEND_API_KEY exists:", !!process.env.RESEND_API_KEY);
-
-    const result = await resend.emails.send({
-      from: "Sanskriti Yatra <onboarding@resend.dev>",
+    const mailOptions = {
+      from: `"Sanskriti Yatra" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: "Your Password Reset OTP Code",
       html: `
@@ -17,9 +20,11 @@ const sendOTPEmail = async (email, otp) => {
         <h1>${otp}</h1>
         <p>This OTP will expire in 5 minutes.</p>
       `,
-    });
+    };
 
-    console.log("Email sent successfully:", result);
+    const result = await transporter.sendMail(mailOptions);
+
+    console.log("OTP email sent successfully:", result.messageId);
     return result;
   } catch (error) {
     console.error("Email sending failed:", error);

@@ -13,7 +13,7 @@ router.get("/monthly-stats", bookingController.getMonthlyBookingStats);
 
 // get bookings by user
 router.get("/user/:userId", bookingController.getUserBookings);
-
+router.put("/cancel/:id", bookingController.cancelBooking);
 // cancel booking (admin)
 router.put("/cancel-admin/:id", bookingController.deleteBooking);
 

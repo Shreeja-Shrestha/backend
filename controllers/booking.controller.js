@@ -225,7 +225,41 @@ exports.getUserBookings = (req, res) => {
     });
 };
 
+// USER CANCEL BOOKING
+exports.cancelBooking = (req, res) => {
 
+    const { id } = req.params;
+
+    const sql = `
+        UPDATE tour_bookings
+        SET booking_status = 'Cancelled'
+        WHERE id = ?
+    `;
+
+    db.query(sql, [id], (err, result) => {
+
+        if (err) {
+            return res.status(500).json({
+                success: false,
+                message: err.message
+            });
+        }
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Booking not found"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Booking cancelled successfully"
+        });
+
+    });
+
+};
 // =========================
 // 4. CANCEL BOOKING (ADMIN)
 // =========================

@@ -2,9 +2,7 @@ const db = require('../config/db');
 const axios = require('axios');
 
 
-// =========================
-// 1. INITIATE PAYMENT
-// =========================
+
 exports.initiatePayment = (req, res) => {
 
     const { amount, purchase_order_id, purchase_order_name } = req.body;
@@ -77,12 +75,9 @@ exports.initiatePayment = (req, res) => {
 };
 
 
-// =========================
+
 // 2. CREATE BOOKING
-// =========================
-// =========================
-// 2. CREATE BOOKING
-// =========================
+
 exports.createBooking = (req, res) => {
   const {
     user_id,
@@ -151,7 +146,7 @@ exports.createBooking = (req, res) => {
         const category = tour.category || "";
         const subcategory = tour.subcategory || "";
 
-        const adminId = 10; // change this if your admin user id is different
+        const adminId = 10; 
 
         const notificationTitle =
           category === "food"
@@ -202,9 +197,9 @@ exports.createBooking = (req, res) => {
   );
 };
 
-// =========================
+
 // 3. GET USER BOOKINGS
-// =========================
+
 exports.getUserBookings = (req, res) => {
 
     const userId = req.params.userId;
@@ -234,55 +229,103 @@ exports.getUserBookings = (req, res) => {
 // =========================
 // 4. CANCEL BOOKING (ADMIN)
 // =========================
-exports.deleteBooking = (req, res) => {
+exports.cancelBooking = (req, res) => {
+  const { id } = req.params;
 
-    const { id } = req.params;
+  const checkSql = `
+    SELECT id, user_id, payment_status, booking_status
+    FROM tour_bookings
+    WHERE id = ?
+  `;
 
-    const sql = `
-        UPDATE tour_bookings
-        SET booking_status = 'Cancelled'
-        WHERE id = ?
+  db.query(checkSql, [id], (err, rows) => {
+    if (err) {
+      return res.status(500).json({
+        success: false,
+        message: err.message,
+      });
+    }
+
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Booking not found",
+      });
+    }
+
+    const booking = rows[0];
+
+    if (booking.booking_status === "Cancelled") {
+      return res.status(400).json({
+        success: false,
+        message: "Booking already cancelled",
+      });
+    }
+
+    if (booking.payment_status !== "Paid") {
+      return res.status(400).json({
+        success: false,
+        message: "Only paid bookings can be cancelled here",
+      });
+    }
+
+    const updateSql = `
+      UPDATE tour_bookings
+      SET booking_status = 'Cancelled'
+      WHERE id = ?
     `;
 
-    db.query(sql, [id], (err, result) => {
-
-        if (err) {
-            console.error("SQL Error:", err.message);
-            return res.status(500).json({
-                success: false,
-                message: err.message
-            });
-        }
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "Booking not found"
-            });
-        }
-
-        // Send notification to user
-        db.query(`
-            INSERT INTO notifications (user_id, title, message, type, reference_id)
-            SELECT user_id, ?, ?, 'booking', ?
-            FROM tour_bookings WHERE id = ?
-        `, [
-            "Booking Cancelled",
-            "Your booking has been cancelled by admin.",
-            id,
-            id
-        ]);
-
-        res.status(200).json({
-            success: true,
-            message: "Booking cancelled successfully"
+    db.query(updateSql, [id], (err) => {
+      if (err) {
+        return res.status(500).json({
+          success: false,
+          message: err.message,
         });
+      }
 
+      // User notification
+      db.query(
+        `
+        INSERT INTO notifications
+        (user_id, title, message, type, reference_id, is_read)
+        VALUES (?, ?, ?, ?, ?, ?)
+        `,
+        [
+          booking.user_id,
+          "Booking Cancelled",
+          "Your booking has been cancelled. Please contact support regarding refunds.",
+          "booking",
+          id,
+          0,
+        ]
+      );
+
+      // Admin notification
+      db.query(
+        `
+        INSERT INTO notifications
+        (user_id, title, message, type, reference_id, is_read)
+        VALUES (?, ?, ?, ?, ?, ?)
+        `,
+        [
+          10,
+          "Refund Needed",
+          `Booking ${id} was cancelled after payment. Please review refund manually.`,
+          "booking",
+          id,
+          0,
+        ]
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Booking cancelled successfully",
+      });
     });
+  });
 };
-// =========================
 // GET TOTAL BOOKINGS
-// =========================
+
 exports.getTotalBookings = (req, res) => {
   const sql = `
     SELECT COUNT(*) AS total
@@ -305,11 +348,9 @@ exports.getTotalBookings = (req, res) => {
   });
 };
 
-// GET MONTHLY BOOKING STATS
-// =========================
-// =========================
+
 // GET MONTHLY BOOKING STATS BY TRAVEL DATE
-// =========================
+
 exports.getMonthlyBookingStats = (req, res) => {
   const sql = `
     SELECT 

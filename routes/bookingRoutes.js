@@ -14,7 +14,10 @@ router.get("/monthly-stats", bookingController.getMonthlyBookingStats);
 // get bookings by user
 router.get("/user/:userId", bookingController.getUserBookings);
 
-// cancel booking (admin)
+// cancel booking by user
+router.put("/cancel/:id", bookingController.cancelBooking);
+
+// cancel booking by admin
 router.put("/cancel-admin/:id", bookingController.deleteBooking);
 
 module.exports = router;

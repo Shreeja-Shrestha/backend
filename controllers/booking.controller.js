@@ -1,378 +1,136 @@
-const db = require('../config/db');
-const axios = require('axios');
+const db = require("../config/db");
 
-
-
-exports.initiatePayment = (req, res) => {
-
-    const { amount, purchase_order_id, purchase_order_name } = req.body;
-
-    if (!amount || !purchase_order_id) {
-        return res.status(400).json({
-            error: "Amount and booking id are required"
-        });
-    }
-
-    //  Check booking exists + not already paid
-    const checkSql = `SELECT payment_status FROM tour_bookings WHERE id = ?`;
-
-    db.query(checkSql, [purchase_order_id], (err, result) => {
-
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
-
-        if (result.length === 0) {
-            return res.status(404).json({ error: "Booking not found" });
-        }
-
-        if (result[0].payment_status === "Paid") {
-            return res.status(400).json({
-                error: "Payment already completed for this booking"
-            });
-        }
-
-        //  Call Khalti
-        axios.post('https://a.khalti.com/api/v2/epayment/initiate/', {
-            return_url: `https://backend-production-551c.up.railway.app/api/payment/payment-success`,
-            website_url: "https://yourwebsite.com",
-            amount: amount * 100,
-            purchase_order_id: purchase_order_id,
-            purchase_order_name: purchase_order_name,
-        }, {
-            headers: { 'Authorization': 'Key 9e601b866fff445197196b3e7407c2ac' }
-        })
-        .then(response => {
-
-            const { pidx, payment_url } = response.data;
-
-            // Save pidx
-            const updateSql = `UPDATE tour_bookings SET pidx = ? WHERE id = ?`;
-
-            db.query(updateSql, [pidx, purchase_order_id], (err) => {
-
-                if (err) {
-                    console.log("DB Error:", err);
-                    return res.status(500).json({ error: "Failed to save payment id" });
-                }
-
-                res.json({
-                    success: true,
-                    payment_url: payment_url,
-                    pidx: pidx
-                });
-
-            });
-
-        })
-        .catch(err => {
-            console.error("Khalti Error:", err.response?.data || err.message);
-            res.status(500).json({ error: "Failed to initiate payment" });
-        });
-
-    });
-
-};
-
-
-
-// 2. CREATE BOOKING
-
+// CREATE BOOKING
 exports.createBooking = (req, res) => {
   const {
     user_id,
     tour_id,
     travel_date,
     number_of_people,
-    transport_mode
+    transport_mode,
   } = req.body;
 
   if (!user_id || !tour_id || !travel_date || !number_of_people || !transport_mode) {
-    return res.status(400).json({
-      error: "All required fields must be provided"
-    });
+    return res.status(400).json({ message: "All fields are required" });
   }
 
-  const bookingSql = `
+  const sql = `
     INSERT INTO tour_bookings
-    (
-      user_id,
-      tour_id,
-      travel_date,
-      number_of_people,
-      transport_mode,
-      booking_status,
-      payment_status,
-      amount_paid,
-      payment_method
-    )
+    (user_id, tour_id, travel_date, number_of_people, transport_mode, booking_status, payment_status, amount_paid, payment_method)
     VALUES (?, ?, ?, ?, ?, 'Pending', 'Unpaid', 0, 'Khalti')
   `;
 
   db.query(
-    bookingSql,
+    sql,
     [user_id, tour_id, travel_date, number_of_people, transport_mode],
     (err, result) => {
       if (err) {
-        console.log("DB ERROR:", err);
-        return res.status(500).json({
-          error: "Booking creation failed",
-          details: err.message
-        });
+        return res.status(500).json({ message: "Database error", error: err });
       }
 
-      const bookingId = result.insertId;
-
-      // Get tour/package details for notification message
-      const tourSql = `
-        SELECT title, category, subcategory
-        FROM tours
-        WHERE id = ?
-      `;
-
-      db.query(tourSql, [tour_id], (tourErr, tourRows) => {
-        if (tourErr) {
-          console.log("TOUR FETCH ERROR:", tourErr);
-
-          return res.json({
-            message: "Booking created successfully",
-            booking_id: bookingId,
-            notification: "Booking saved, but notification failed"
-          });
-        }
-
-        const tour = tourRows[0] || {};
-        const tourTitle = tour.title || "Tour Package";
-        const category = tour.category || "";
-        const subcategory = tour.subcategory || "";
-
-        const adminId = 10; 
-
-        const notificationTitle =
-          category === "food"
-            ? "New Food Experience Booking"
-            : "New Tour Booking";
-
-        const notificationMessage =
-          category === "food"
-            ? `${tourTitle} (${subcategory}) has been booked by user ${user_id} for ${travel_date}.`
-            : `${tourTitle} has been booked by user ${user_id} for ${travel_date}.`;
-
-        const notificationSql = `
-          INSERT INTO notifications
-          (user_id, title, message, type, reference_id, is_read)
-          VALUES (?, ?, ?, ?, ?, ?)
-        `;
-
-        db.query(
-          notificationSql,
-          [
-            adminId,
-            notificationTitle,
-            notificationMessage,
-            "booking",
-            bookingId,
-            0
-          ],
-          (notificationErr) => {
-            if (notificationErr) {
-              console.log("NOTIFICATION ERROR:", notificationErr);
-
-              return res.json({
-                message: "Booking created successfully",
-                booking_id: bookingId,
-                notification: "Booking saved, but notification failed"
-              });
-            }
-
-            return res.json({
-              message: "Booking created successfully",
-              booking_id: bookingId,
-              notification: "Admin notification created"
-            });
-          }
-        );
+      res.status(201).json({
+        message: "Booking created successfully",
+        booking_id: result.insertId,
       });
     }
   );
 };
 
-
-// 3. GET USER BOOKINGS
-
+// GET BOOKINGS BY USER
 exports.getUserBookings = (req, res) => {
+  const userId = req.params.userId;
 
-    const userId = req.params.userId;
+  const sql = `
+    SELECT 
+      b.*,
+      t.title,
+      t.destination,
+      t.image,
+      t.price,
+      t.duration
+    FROM tour_bookings b
+    JOIN tours t ON b.tour_id = t.id
+    WHERE b.user_id = ?
+    ORDER BY b.created_at DESC
+  `;
 
-    const sql = `
-        SELECT b.*, t.title
-        FROM tour_bookings b
-        JOIN tours t ON b.tour_id = t.id
-        WHERE b.user_id = ?
-        ORDER BY b.travel_date DESC
-    `;
+  db.query(sql, [userId], (err, result) => {
+    if (err) {
+      return res.status(500).json({ message: "Database error", error: err });
+    }
 
-    db.query(sql, [userId], (err, rows) => {
-
-        if (err) {
-            return res.status(500).json({
-                success: false,
-                message: err.message
-            });
-        }
-
-        res.status(200).json(rows);
-    });
+    res.json(result);
+  });
 };
 
+// GET BOOKING BY ID
+exports.getBookingById = (req, res) => {
+  const bookingId = req.params.id;
 
-// =========================
-// 4. CANCEL BOOKING (ADMIN)
-// =========================
+  const sql = `
+    SELECT 
+      b.*,
+      t.title,
+      t.destination,
+      t.image,
+      t.price,
+      t.duration
+    FROM tour_bookings b
+    JOIN tours t ON b.tour_id = t.id
+    WHERE b.id = ?
+  `;
+
+  db.query(sql, [bookingId], (err, result) => {
+    if (err) {
+      return res.status(500).json({ message: "Database error", error: err });
+    }
+
+    if (result.length === 0) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    res.json(result[0]);
+  });
+};
+
+// CANCEL BOOKING
 exports.cancelBooking = (req, res) => {
-  const { id } = req.params;
+  const bookingId = req.params.id;
 
-  const checkSql = `
-    SELECT id, user_id, payment_status, booking_status
-    FROM tour_bookings
+  const sql = `
+    UPDATE tour_bookings
+    SET booking_status = 'Cancelled'
     WHERE id = ?
   `;
 
-  db.query(checkSql, [id], (err, rows) => {
+  db.query(sql, [bookingId], (err, result) => {
     if (err) {
-      return res.status(500).json({
-        success: false,
-        message: err.message,
-      });
+      return res.status(500).json({ message: "Database error", error: err });
     }
 
-    if (!rows || rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Booking not found",
-      });
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Booking not found" });
     }
 
-    const booking = rows[0];
-
-    if (booking.booking_status === "Cancelled") {
-      return res.status(400).json({
-        success: false,
-        message: "Booking already cancelled",
-      });
-    }
-
-    if (booking.payment_status !== "Paid") {
-      return res.status(400).json({
-        success: false,
-        message: "Only paid bookings can be cancelled here",
-      });
-    }
-
-    const updateSql = `
-      UPDATE tour_bookings
-      SET booking_status = 'Cancelled'
-      WHERE id = ?
-    `;
-
-    db.query(updateSql, [id], (err) => {
-      if (err) {
-        return res.status(500).json({
-          success: false,
-          message: err.message,
-        });
-      }
-
-      // User notification
-      db.query(
-        `
-        INSERT INTO notifications
-        (user_id, title, message, type, reference_id, is_read)
-        VALUES (?, ?, ?, ?, ?, ?)
-        `,
-        [
-          booking.user_id,
-          "Booking Cancelled",
-          "Your booking has been cancelled. Please contact support regarding refunds.",
-          "booking",
-          id,
-          0,
-        ]
-      );
-
-      // Admin notification
-      db.query(
-        `
-        INSERT INTO notifications
-        (user_id, title, message, type, reference_id, is_read)
-        VALUES (?, ?, ?, ?, ?, ?)
-        `,
-        [
-          10,
-          "Refund Needed",
-          `Booking ${id} was cancelled after payment. Please review refund manually.`,
-          "booking",
-          id,
-          0,
-        ]
-      );
-
-      return res.status(200).json({
-        success: true,
-        message: "Booking cancelled successfully",
-      });
-    });
-  });
-};
-// GET TOTAL BOOKINGS
-
-exports.getTotalBookings = (req, res) => {
-  const sql = `
-    SELECT COUNT(*) AS total
-    FROM tour_bookings
-  `;
-
-  db.query(sql, (err, result) => {
-    if (err) {
-      console.log("TOTAL BOOKINGS ERROR:", err);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to fetch total bookings",
-        error: err.message,
-      });
-    }
-
-    res.status(200).json({
-      total: result[0].total,
-    });
+    res.json({ message: "Booking cancelled successfully" });
   });
 };
 
+// DELETE BOOKING
+exports.deleteBooking = (req, res) => {
+  const bookingId = req.params.id;
 
-// GET MONTHLY BOOKING STATS BY TRAVEL DATE
+  const sql = "DELETE FROM tour_bookings WHERE id = ?";
 
-exports.getMonthlyBookingStats = (req, res) => {
-  const sql = `
-    SELECT 
-      DATE_FORMAT(travel_date, '%b') AS month,
-      MONTH(travel_date) AS monthNumber,
-      COUNT(*) AS count
-    FROM tour_bookings
-    WHERE travel_date IS NOT NULL
-    GROUP BY MONTH(travel_date), DATE_FORMAT(travel_date, '%b')
-    ORDER BY monthNumber
-  `;
-
-  db.query(sql, (err, result) => {
+  db.query(sql, [bookingId], (err, result) => {
     if (err) {
-      console.log("MONTHLY BOOKING STATS ERROR:", err);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to fetch monthly booking stats",
-        error: err.message,
-      });
+      return res.status(500).json({ message: "Database error", error: err });
     }
 
-    res.status(200).json(result);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    res.json({ message: "Booking deleted successfully" });
   });
 };

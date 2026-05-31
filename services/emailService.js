@@ -4,9 +4,10 @@ console.log("EMAIL_USER:", process.env.EMAIL_USER);
 console.log("EMAIL_PASS exists:", !!process.env.EMAIL_PASS);
 
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false,
 
-  // Prevent infinite loading
   connectionTimeout: 10000,
   greetingTimeout: 10000,
   socketTimeout: 10000,
@@ -14,6 +15,10 @@ const transporter = nodemailer.createTransport({
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
+  },
+
+  tls: {
+    rejectUnauthorized: false,
   },
 });
 
@@ -42,7 +47,7 @@ const sendOTPEmail = async (email, otp) => {
 
     return info;
   } catch (error) {
-    console.error("Email sending failed:", error.message);
+    console.error("Email sending failed:", error);
     throw error;
   }
 };
